@@ -10,6 +10,17 @@
 
 提升预约效率和成功率
 
+声明-创作者：DYexb
+
+本扩展程序仅供个人学习和技术交流使用
+
+严禁任何形式的商业用途、付费传播或销售
+
+用户应遵守各银行的预约规则和相关法律法规
+
+开发者不对因使用本扩展程序造成的任何损失负责
+
+
 The Commemorative Coin Information Filling Assistant is a Chrome browser
 extension
 
@@ -17,6 +28,16 @@ specifically designed for commemorative coin reservation
 
 helping users quickly and accurately fill out bank reservation forms to
 improve reservation efficiency and success rates
+
+Important Notice-Creator: DYexb
+
+This extension is for personal learning and technical exchange only
+
+Any form of commercial use, paid distribution, or sale is strictly prohibited
+
+Users should comply with bank reservation rules and relevant laws and regulations
+
+The developer is not responsible for any losses caused by using this extension
 
 <div align="center">
 <img width="364" height="500" alt="1"
