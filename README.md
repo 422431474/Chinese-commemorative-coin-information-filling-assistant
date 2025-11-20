@@ -88,8 +88,8 @@ Smart Matching: Auto-recognize bank form structures for higher filling
 accuracy
 
 <div align="center">
-<img width="364" height="500" alt="4"
-src="https://github.com/user-attachments/assets/28145a04-3f11-4474-bbd8-f7af01143e06"
+<img width="364" height="500" alt="3"
+src="https://github.com/user-attachments/assets/29e00a9c-5c8f-4b6a-a079-2d6ec0cf3a95"
 />
 </div>
 
@@ -142,7 +142,7 @@ Sorting Function: Customizable display order for bank links and personal
 information
 
 <div align="center">
-<img width="364" height="500" alt="3"
-src="https://github.com/user-attachments/assets/29e00a9c-5c8f-4b6a-a079-2d6ec0cf3a95"
+<img width="364" height="500" alt="4"
+src="https://github.com/user-attachments/assets/28145a04-3f11-4474-bbd8-f7af01143e06"
 />
 </div>
