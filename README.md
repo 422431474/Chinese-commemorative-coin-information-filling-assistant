@@ -153,23 +153,23 @@ src="https://github.com/user-attachments/assets/28145a04-3f11-4474-bbd8-f7af0114
 
 安装步骤：
 
-第一方案：
+①第一方案：
 
 下载“纪念币信息填写助手.crx”，进入扩展程序管理页面（XXXXX://extensions/
 ）<img width="322" height="38" alt="7" src="https://github.com/user-attachments/assets/133fc012-99b3-4f04-a2f2-22741993f892" />，直接拖入浏览器页面，点击确认安装
 
-第二方案：
+②第二方案：
 
 下载插件文件包并解压缩打开浏览器，进入扩展程序管理页面（XXXXX://extensions/
 ）<img width="322" height="38" alt="7" src="https://github.com/user-attachments/assets/133fc012-99b3-4f04-a2f2-22741993f892" />开启右上角的"开发者模式"<img width="119" height="29" alt="8" src="https://github.com/user-attachments/assets/950faf6a-ecf9-4ff8-850b-d71c19ae81c8" />点击"加载已解压的扩展程序"<img width="176" height="42" alt="9" src="https://github.com/user-attachments/assets/e62aba8b-77c0-4810-8ed8-c6a8313647dd" />，选择解压后的文件夹<img width="107" height="139" alt="10" src="https://github.com/user-attachments/assets/edb9b6b3-0722-4daa-9f22-d988f8b95244" />安装成功后，浏览器工具栏将显示插件图标
 
 Installation Steps:
 
-Option 1:
+①Option 1:
 
 Download the "Commemorative Coin Information Filling Assistant.crx" file, navigate to the extension management page (XXXXX://extensions/)<img width="322" height="38" alt="7" src="https://github.com/user-attachments/assets/133fc012-99b3-4f04-a2f2-22741993f892" />, then drag and drop the CRX file directly into the browser's extension management page and confirm the installation.
 
-Option 2:
+②Option 2:
 
 Download the plugin file package and extract it.Open the browser and go to the Extensions management page (XXXXX://extensions/)<img width="322" height="38" alt="7" src="https://github.com/user-attachments/assets/133fc012-99b3-4f04-a2f2-22741993f892" />.Enable "Developer mode" in the top-right corner<img width="119" height="29" alt="8" src="https://github.com/user-attachments/assets/950faf6a-ecf9-4ff8-850b-d71c19ae81c8" />.Click "Load unpacked extension" <img width="176" height="42" alt="9" src="https://github.com/user-attachments/assets/e62aba8b-77c0-4810-8ed8-c6a8313647dd" />and select the extracted folder<img width="107" height="139" alt="10" src="https://github.com/user-attachments/assets/edb9b6b3-0722-4daa-9f22-d988f8b95244" />.After successful installation, the plugin icon will appear in the browser toolbar.
 
