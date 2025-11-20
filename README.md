@@ -153,19 +153,22 @@ src="https://github.com/user-attachments/assets/28145a04-3f11-4474-bbd8-f7af0114
 
 安装步骤：
 
-下载插件文件包并解压缩打开Chrome浏览器，进入扩展程序管理页面（chrome://extensions/）开启右上角的"开发者模式"点击"加载已解压的扩展程序"，选择解压后的文件夹安装成功后，浏览器工具栏将显示插件图标
+下载插件文件包并解压缩打开Chrome浏览器，进入扩展程序管理页面（chrome://extensions/
+）<img width="322" height="38" alt="7" src="https://github.com/user-attachments/assets/133fc012-99b3-4f04-a2f2-22741993f892" />开启右上角的"开发者模式"<img width="119" height="29" alt="8" src="https://github.com/user-attachments/assets/950faf6a-ecf9-4ff8-850b-d71c19ae81c8" />点击"加载已解压的扩展程序"<img width="176" height="42" alt="9" src="https://github.com/user-attachments/assets/e62aba8b-77c0-4810-8ed8-c6a8313647dd" />，选择解压后的文件夹<img width="107" height="139" alt="10" src="https://github.com/user-attachments/assets/edb9b6b3-0722-4daa-9f22-d988f8b95244" />安装成功后，浏览器工具栏将显示插件图标
 
 Installation Steps:
 
-Download the plugin file package and extract it.Open the Chrome browser and go to the Extensions management page (chrome://extensions/).Enable "Developer mode" in the top-right corner.Click "Load unpacked extension" and select the extracted folder.After successful installation, the plugin icon will appear in the browser toolbar.
+Download the plugin file package and extract it.Open the Chrome browser and go to the Extensions management page (chrome://extensions/)<img width="322" height="38" alt="7" src="https://github.com/user-attachments/assets/133fc012-99b3-4f04-a2f2-22741993f892" />.Enable "Developer mode" in the top-right corner<img width="119" height="29" alt="8" src="https://github.com/user-attachments/assets/950faf6a-ecf9-4ff8-850b-d71c19ae81c8" />.Click "Load unpacked extension" <img width="176" height="42" alt="9" src="https://github.com/user-attachments/assets/e62aba8b-77c0-4810-8ed8-c6a8313647dd" />and select the extracted folder<img width="107" height="139" alt="10" src="https://github.com/user-attachments/assets/edb9b6b3-0722-4daa-9f22-d988f8b95244" />.After successful installation, the plugin icon will appear in the browser toolbar.
 
 启动方式：
 
-点击浏览器工具栏中的插件图标即可打开主界面插件界面为弹出式窗口，尺寸为360x500像素，优化显示效果
+点击浏览器工具栏中的插件图标即可打开
 
 Launch Method:
 
-Click the plugin icon in the browser toolbar to open the main interface.The plugin interface is a pop-up window with dimensions of 360x500 pixels, optimized for display.
+Click the plugin icon in the browser toolbar to open the main interface.
+
+<img width="319" height="38" alt="11" src="https://github.com/user-attachments/assets/69962cd1-5a35-4f84-a400-768cb6c76097" />
 
 ### 二、核心功能使用/II. Core Function Usage
 
@@ -175,25 +178,40 @@ Click the plugin icon in the browser toolbar to open the main interface.The plug
 
 点击主界面"已保存的信息"区域的"添加"按钮在弹出的编辑窗口中填写以下信息：
 
-  必填项：姓名、身份证号、手机号
-  
-  选填项：省市、地市、县区、预约网点、预约数量点击"保存信息"完成添加
-  
+<img width="57" height="26" alt="12" src="https://github.com/user-attachments/assets/fa0bc0a1-0d0d-4ff2-aae8-8e7a87c3b3b6" />
+
+必填项：姓名、身份证号、手机号
+
+<img width="259" height="172" alt="13" src="https://github.com/user-attachments/assets/a18660c7-6f8a-4765-b45f-bbce0bad2eb1" />
+
+选填项：省市、地市、县区、预约网点、预约数量点击"保存信息"完成添加
+
+<img width="255" height="317" alt="14" src="https://github.com/user-attachments/assets/5c5ade9c-fb14-43e8-a783-2caf18f4c879" />
+
 Add Information:
 
 Click the "Add" button in the "Saved Information" section of the main interface.Fill in the following information in the popup editing window:
 
-  Required: Name, ID number, Phone number
-  
-  Optional: Province/City, City, County/District, Appointment branch, Appointment quantityClick "Save Information" to complete the addition.
+<img width="57" height="26" alt="12" src="https://github.com/user-attachments/assets/a3490759-2b22-4888-8760-c12a722698c3" />
+
+Required: Name, ID number, Phone number
+
+<img width="259" height="172" alt="13" src="https://github.com/user-attachments/assets/a18660c7-6f8a-4765-b45f-bbce0bad2eb1" />
+
+Optional: Province/City, City, County/District, Appointment branch, Appointment quantityClick "Save Information" to complete the addition.
+
+<img width="255" height="317" alt="14" src="https://github.com/user-attachments/assets/5c5ade9c-fb14-43e8-a783-2caf18f4c879" />
   
 编辑信息：
 
 在信息列表中点击编辑按钮（铅笔图标）或通过"检查信息"功能进入详细编辑界面
 
+
 Edit Information:
 
 Click the edit button (pencil icon) in the information list.Or use the "Check Information" function to enter the detailed editing interface.
+
+<img width="29" height="23" alt="15" src="https://github.com/user-attachments/assets/7c145ebd-ce55-4bd9-bbce-82e156c18254" />
 
 删除信息：
 
@@ -203,6 +221,8 @@ Delete Information:
 
 Click the delete button (trash can icon) on the right side of the information item.Confirm the deletion action.
 
+<img width="28" height="24" alt="16" src="https://github.com/user-attachments/assets/57dbb032-2820-41fb-ae44-027720ff64ef" />
+
 信息排序：
 
 点击"排序"按钮进入排序模式拖拽信息项调整显示顺序再次点击"完成"保存排序
@@ -210,6 +230,8 @@ Click the delete button (trash can icon) on the right side of the information it
 Sort Information:
 
 Click the "Sort" button to enter sorting mode.Drag and drop information items to adjust the display order.Click "Done" again to save the sorting.
+
+<img width="34" height="23" alt="17" src="https://github.com/user-attachments/assets/06272d95-def5-456d-b71c-1c96ef163da7" />
 
 #### 2. 银行预约功能/2. Bank Appointment Function
 
