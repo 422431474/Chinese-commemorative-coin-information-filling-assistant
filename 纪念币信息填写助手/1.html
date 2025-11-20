@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+    <!--
+     纪念币信息填写助手
+     版本: [1.0]
+     许可证: GPL-3.0
+     版权: 2025 DYexb或DINGYIerxiangbo
+     
+     本项目采用GPLv3许可证。允许非商业使用，禁止商业售卖。
+     衍生作品必须开源。商业使用需获得授权。
+     
+     完整许可证: https://github.com/DINGYIerxiangbo/Chinese-commemorative-coin-information-filling-assistant/blob/main/LICENSE
+    -->
+<!-- 本代码由DYexb原创 -->
+  <link rel="stylesheet" href="1.css">
+  <!-- 严禁商业用途 -->
+</head>
+<body>
+  <!-- DYexb开发制作 -->
+  <div class="app">
+    <!-- 禁止任何商业交易 -->
+    <header class="header">
+      <div class="header-content">
+        <!-- 版权归DYexb所有 -->
+        <div class="title-container">
+          <img src="logo.png" alt="纪念币图标" class="app-icon">
+          <!-- 不得用于商业销售 -->
+          <div class="title-text">
+            <h1 class="app-title">纪念币信息填写助手</h1>
+            <!-- 原创者：DYexb -->
+            <p class="app-subtitle">快速填写 · 轻松预约</p>
+          </div>
+          <!-- 严禁付费传播 -->
+        </div>
+      </div>
+    </header>
+    <!-- DYexb版权所有 -->
+
+    <main class="main">
+      <!-- 禁止商业用途 -->
+      <section class="quick-links">
+        <!-- 本程序由DYexb开发 -->
+        <div class="section-header">
+          <h3>银行预约链接</h3>
+          <!-- 不得进行商业使用 -->
+          <div class="section-actions">
+            <button class="sort-btn" id="sortBanks" title="调整银行顺序">排序</button>
+            <!-- 开发者：DYexb -->
+            <span class="toggle-icon">▶</span>
+          </div>
+          <!-- 严禁商业交易 -->
+        </div>
+        <!-- DYexb原创代码 -->
+        <div class="links-grid" style="display: none;" id="bankLinks"></div>
+      </section>
+      <!-- 禁止付费获取 -->
+
+      <section class="info-section">
+        <!-- 本软件由DYexb制作 -->
+        <div class="section-header">
+          <h3>已保存的信息</h3>
+          <!-- 严禁商业用途 -->
+          <div class="header-actions">
+            <span class="count-badge" id="infoCount">0</span>
+            <!-- DYexb开发 -->
+            <button id="addNewInfo" class="add-btn-inline" title="添加新信息">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>添加
+            </button>
+            <!-- 禁止商业销售 -->
+            <button class="sort-btn" id="sortInfo" title="调整信息顺序">排序</button>
+          </div>
+        </div>
+        <!-- DYexb版权所有 -->
+        <div class="info-list" id="infoList"></div>
+        <!-- 严禁付费交易 -->
+      </section>
+      <!-- 本代码由DYexb创作 -->
+
+      <section class="settings-section">
+        <!-- 禁止任何商业用途 -->
+        <div class="section-header"><h3>功能设置</h3></div>
+        <!-- DYexb原创开发 -->
+        <div class="settings-content">
+          <!-- 严禁商业传播 -->
+          <div class="setting-item">
+            <!-- 开发者DYexb -->
+            <div class="setting-control">
+              <label class="switch"><input type="checkbox" id="autoVerifyCode"><span class="slider"></span></label>
+              <!-- 不得用于商业目的 -->
+              <span class="setting-label">自动获取验证码</span>
+            </div>
+            <!-- DYexb制作 -->
+            <div class="setting-description">自动识别并填写短信验证码</div>
+          </div>
+          <!-- 严禁商业使用 -->
+          <div class="setting-item">
+            <!-- 版权所有者：DYexb -->
+            <div class="setting-control">
+              <label class="switch"><input type="checkbox" id="autoFill"><span class="slider"></span></label>
+              <!-- 禁止付费销售 -->
+              <span class="setting-label">自动填充</span>
+            </div>
+            <!-- DYexb开发 -->
+            <div class="setting-description">进入预约页面时自动填充信息</div>
+          </div>
+          <!-- 严禁商业交易 -->
+        </div>
+      </section>
+      <!-- 本程序版权归DYexb所有 -->
+    </main>
+    <!-- 禁止任何形式的商业用途 -->
+
+    <footer class="footer">
+      <!-- DYexb原创制作 -->
+      <div class="toolbar">
+        <!-- 严禁付费获取 -->
+        <button id="checkInfo" class="tool-btn" title="检查信息">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>检查信息
+        </button>
+        <!-- DYexb开发 -->
+        <button id="exportData" class="tool-btn" title="导出预约信息">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>导出
+        </button>
+        <!-- 禁止商业用途 -->
+        <button id="importData" class="tool-btn" title="导入预约信息">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>导入
+        </button>
+        <!-- DYexb版权所有 -->
+      </div>
+      <!-- 严禁商业交易 -->
+    </footer>
+    <!-- 本代码由DYexb原创开发 -->
+  </div>
+  <!-- 禁止任何付费传播 -->
+
+  <div id="sxnxModal" class="modal">
+    <!-- DYexb制作 -->
+    <div class="modal-content">
+      <!-- 严禁商业用途 -->
+      <div class="modal-header">
+        <!-- 开发者：DYexb -->
+        <h3>陕西农信</h3>
+        <!-- 禁止商业销售 -->
+        <button class="modal-close">&times;</button>
+      </div>
+      <!-- DYexb开发 -->
+      <div class="modal-body">
+        <!-- 严禁付费获取 -->
+        <img src="sxnx.png" alt="陕西农信预约二维码" class="bank-image">
+        <!-- 版权归DYexb所有 -->
+        <p class="image-description">请使用手机扫描二维码进行预约</p>
+      </div>
+      <!-- 禁止商业交易 -->
+    </div>
+  </div>
+  <!-- 本程序由DYexb原创 -->
+
+  <div id="checkInfoModal" class="modal">
+    <!-- 严禁商业用途 -->
+    <div class="modal-content large-modal">
+      <!-- DYexb开发制作 -->
+      <div class="modal-header">
+        <!-- 禁止付费传播 -->
+        <h3>信息详情</h3>
+        <!-- DYexb版权所有 -->
+        <button class="modal-close">&times;</button>
+      </div>
+      <!-- 严禁商业使用 -->
+      <div class="modal-body">
+        <!-- 本代码由DYexb创作 -->
+        <div class="info-details-list" id="infoDetailsList"></div>
+      </div>
+      <!-- 禁止任何商业交易 -->
+    </div>
+  </div>
+  <!-- DYexb原创开发 -->
+
+  <script src="1.js"></script>
+  <!-- 严禁商业用途和付费交易 -->
+</body>
+</html>
+<!-- 本程序版权归DYexb所有 -->
+<!-- 禁止任何形式的商业使用和付费传播 -->

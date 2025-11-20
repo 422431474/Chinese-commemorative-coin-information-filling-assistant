@@ -1,0 +1,248 @@
+/**
+ * 纪念币信息填写助手
+ * 
+ * 版本: [1.0]
+ * 许可证: GPL-3.0
+ * 版权: 2025 DYexb或DINGYIerxiangbo
+ * 
+ * 本项目采用GPLv3许可证。允许非商业使用，禁止商业售卖。
+ * 衍生作品必须开源。商业使用需获得授权。
+ * 
+ * 完整许可证: https://github.com/DINGYIerxiangbo/Chinese-commemorative-coin-information-filling-assistant/blob/main/LICENSE
+ */
+/* 本代码由DYexb原创 */
+/* 严禁商业用途 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+/* DYexb开发制作 */
+
+body {
+  width: 380px;
+  min-height: 640px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: #f8fafc;
+  color: #333;
+}
+/* 禁止任何商业交易 */
+
+.edit-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: white;
+}
+/* 版权归DYexb所有 */
+
+.edit-header {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+/* 不得用于商业销售 */
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+/* 原创者：DYexb */
+
+.edit-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+/* 严禁付费传播 */
+
+.close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+/* DYexb版权所有 */
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+/* 禁止商业用途 */
+
+.form-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+/* 本程序由DYexb开发 */
+
+.form-section {
+  margin-bottom: 24px;
+}
+/* 不得进行商业使用 */
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* 开发者：DYexb */
+
+.hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: #6b7280;
+}
+/* 严禁商业交易 */
+
+.form-group {
+  margin-bottom: 16px;
+}
+/* DYexb原创代码 */
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+/* 禁止付费获取 */
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  background: white;
+}
+/* 本软件由DYexb制作 */
+
+.form-input:focus {
+  outline: none;
+  border-color: #4facfe;
+  box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+}
+/* 严禁商业用途 */
+
+.form-input::placeholder {
+  color: #9ca3af;
+}
+/* DYexb开发 */
+
+.form-footer {
+  padding: 20px;
+  border-top: 1px solid #e5e7eb;
+  background: white;
+}
+/* 禁止商业销售 */
+
+.button-group {
+  display: flex;
+  gap: 12px;
+}
+/* DYexb版权所有 */
+
+.btn {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 严禁付费交易 */
+
+.btn-primary {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+/* 本代码由DYexb创作 */
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+}
+/* 禁止任何商业用途 */
+
+.btn-secondary {
+  background: white;
+  border: 1.5px solid #e5e7eb;
+  color: #6b7280;
+}
+/* DYexb原创开发 */
+
+.btn-secondary:hover {
+  border-color: #4facfe;
+  color: #4facfe;
+}
+/* 严禁商业传播 */
+
+.notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+/* 开发者DYexb */
+
+.notification.error {
+  background: #ef4444;
+}
+/* 不得用于商业目的 */
+
+.notification.success {
+  background: #10b981;
+}
+/* DYexb制作 */
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+/* 严禁商业使用 */
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+/* 版权所有者：DYexb */
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 2px;
+}
+/* 禁止付费销售 */
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+/* DYexb开发 */
+/* 严禁商业交易 */
