@@ -295,7 +295,7 @@ to confirm successful filling.
 
 Completely display all saved personal information fields for easy review and correction of stored data.
 
-<img width="111" height="33" alt="20" src="https://github.com/user-attachments/assets/c5a62f52-0527-4e15-b9eb-104b06ed5b21" />
+<img width="290" height="85" alt="20" src="https://github.com/user-attachments/assets/0d5d2ace-9160-4871-95ec-7a51e79c3fc4" />
 
 导出数据：
 
