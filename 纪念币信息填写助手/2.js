@@ -1018,10 +1018,22 @@ async function selectBranchByAPI(data, districtSelect) {
             // 输入网点名称的关键字（取前几个字）
             const keyword = selectedBranch.name.substring(0, 6);
             console.log('建行API：输入搜索关键字', keyword);
+            
+            // 聚焦输入框
+            branchInput.focus();
+            await sleep(100);
+            
+            // 清空并输入
+            branchInput.value = '';
             branchInput.value = keyword;
+            
+            // 触发多种事件来确保搜索被触发
+            branchInput.dispatchEvent(new Event('focus', { bubbles: true }));
             branchInput.dispatchEvent(new Event('input', { bubbles: true }));
             branchInput.dispatchEvent(new Event('change', { bubbles: true }));
-            console.log('建行API：已触发input和change事件');
+            branchInput.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'a', keyCode: 65 }));
+            branchInput.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter', keyCode: 13 }));
+            console.log('建行API：已触发focus/input/change/keyup/keydown事件');
             
             // 等待搜索结果加载，带重试
             let clicked = false;
