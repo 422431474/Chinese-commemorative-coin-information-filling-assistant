@@ -989,10 +989,11 @@ async function selectBranchByAPI(data, districtSelect) {
         // 优先选择有库存的网点
         branches.sort((a, b) => b.stock - a.stock);
         
-        const selectedBranch = branches.find(b => b.stock > 0) || branches[0];
+        const selectedBranch = branches.find(b => b.stock > 0);
         if (!selectedBranch) {
-            console.log('建行API：无可用网点');
-            return { success: false };
+            console.log('建行API：当前区县无库存网点，跳过选择');
+            updateCCBStatus('⚠ 当前区县无库存');
+            return { success: false, noStock: true };
         }
         
         console.log('建行API：选择网点', selectedBranch.name, '库存:', selectedBranch.stock);
