@@ -47,7 +47,7 @@
         "https://wap0.spdb.com.cn/*",
         "https://wxyh.hsbank.cc/*"
       ],
-      "js": ["2.js"],
+      "js": ["ocr.js", "2.js"],
       "run_at": "document_idle"
     }
   ],

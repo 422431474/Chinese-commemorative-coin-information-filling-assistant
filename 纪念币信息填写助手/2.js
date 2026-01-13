@@ -408,7 +408,7 @@ function findLiByLabel(labelText) {
     return null;
 }
 
-// 建设银行验证码识别
+// 建设银行验证码识别（使用纯JS OCR）
 async function solveCCBCaptcha() {
     try {
         // 找到验证码图片 (id="fujiama" 或 class="yzm_img")
@@ -417,77 +417,121 @@ async function solveCCBCaptcha() {
             console.log('建行：未找到验证码图片');
             return { success: false, error: '未找到验证码图片' };
         }
-        
+
         // 找到验证码输入框
         const captchaInput = findInputByLabel('附加码');
         if (!captchaInput) {
             console.log('建行：未找到验证码输入框');
             return { success: false, error: '未找到验证码输入框' };
         }
-        
-        // 将验证码图片转为base64
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = captchaImg.naturalWidth || captchaImg.width;
-        canvas.height = captchaImg.naturalHeight || captchaImg.height;
-        ctx.drawImage(captchaImg, 0, 0);
-        const base64 = canvas.toDataURL('image/png');
-        
-        // 调用本地OCR服务
-        try {
-            const response = await fetch('http://127.0.0.1:9898/ocr', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: base64.split(',')[1] })
-            });
-            
-            if (response.ok) {
-                const result = await response.json();
-                if (result.code && result.code.length >= 4) {
-                    captchaInput.value = result.code;
-                    triggerEvent(captchaInput, 'input');
-                    triggerEvent(captchaInput, 'change');
-                    console.log('建行：验证码识别成功', result.code);
-                    return { success: true, code: result.code };
-                }
-            }
-        } catch (fetchError) {
-            console.log('建行：OCR服务调用失败', fetchError.message);
+
+        // 使用纯JS OCR识别（优先本地服务，fallback到Tesseract.js）
+        console.log('建行：开始识别验证码...');
+        const result = await recognizeCaptchaJS(captchaImg);
+
+        if (result.success && result.code) {
+            captchaInput.value = result.code;
+            triggerEvent(captchaInput, 'input');
+            triggerEvent(captchaInput, 'change');
+            console.log('建行：验证码识别成功', result.code);
+            return { success: true, code: result.code };
         }
-        
+
         // OCR失败，刷新验证码
+        console.log('建行：验证码识别失败', result.error);
         captchaImg.click();
-        return { success: false, error: '验证码识别失败，请确保OCR服务已启动' };
-        
+        return { success: false, error: result.error || '验证码识别失败' };
+
     } catch (error) {
         console.error('建行验证码识别错误:', error);
         return { success: false, error: error.message };
     }
 }
 
-// 验证码识别（调用本地ddddocr服务）
+// 验证码识别（调用本地ddddocr服务）- 已废弃，使用 recognizeCaptchaJS
 async function recognizeCaptcha(base64Image) {
+    const result = await recognizeCaptchaJS({ src: base64Image });
+    return result.success ? result.code : null;
+}
+
+// 纯JS验证码识别（通过background.js调用，绕过CSP限制）
+async function recognizeCaptchaJS(captchaImg) {
     try {
-        // 尝试调用本地ddddocr HTTP服务
-        const response = await fetch('http://127.0.0.1:9898/ocr', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: base64Image.split(',')[1] })
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            if (result.code) {
-                console.log('验证码识别成功:', result.code);
-                return result.code;
-            }
+        // 获取验证码图片的base64数据
+        let imageDataUrl;
+
+        if (typeof captchaImg === 'string') {
+            // 已经是base64字符串
+            imageDataUrl = captchaImg;
+        } else if (captchaImg.src && captchaImg.src.startsWith('data:')) {
+            // 已经是data URL
+            imageDataUrl = captchaImg.src;
+        } else {
+            // 需要将图片转换为base64
+            imageDataUrl = await imageToBase64(captchaImg);
         }
+
+        if (!imageDataUrl) {
+            return { success: false, error: '无法获取验证码图片数据' };
+        }
+
+        console.log('建行：发送验证码到background.js进行OCR识别...');
+
+        // 通过消息传递调用background.js的OCR功能（绕过CSP限制）
+        const result = await new Promise((resolve) => {
+            chrome.runtime.sendMessage(
+                { action: 'recognizeCaptcha', imageDataUrl: imageDataUrl },
+                (response) => {
+                    if (chrome.runtime.lastError) {
+                        resolve({ success: false, error: chrome.runtime.lastError.message });
+                    } else {
+                        resolve(response || { success: false, error: '无响应' });
+                    }
+                }
+            );
+        });
+
+        if (result.success && result.text) {
+            console.log('建行：OCR识别成功，方式:', result.method, '结果:', result.text);
+            return { success: true, code: result.text };
+        } else {
+            return { success: false, error: result.error || 'OCR识别失败' };
+        }
+
     } catch (error) {
-        console.log('本地OCR服务不可用，尝试备用方案');
+        console.error('建行：验证码识别异常:', error);
+        return { success: false, error: error.message };
     }
-    
-    // 备用方案：简单的图像分析（仅作为fallback）
-    return null;
+}
+
+// 将图片元素转换为base64
+async function imageToBase64(imgElement) {
+    return new Promise((resolve) => {
+        try {
+            // 创建canvas
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // 等待图片加载完成
+            if (!imgElement.complete) {
+                imgElement.onload = () => {
+                    canvas.width = imgElement.naturalWidth || imgElement.width;
+                    canvas.height = imgElement.naturalHeight || imgElement.height;
+                    ctx.drawImage(imgElement, 0, 0);
+                    resolve(canvas.toDataURL('image/png'));
+                };
+                imgElement.onerror = () => resolve(null);
+            } else {
+                canvas.width = imgElement.naturalWidth || imgElement.width;
+                canvas.height = imgElement.naturalHeight || imgElement.height;
+                ctx.drawImage(imgElement, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+            }
+        } catch (e) {
+            console.error('图片转base64失败:', e);
+            resolve(null);
+        }
+    });
 }
 
 // 建设银行配置：选择模式
@@ -705,6 +749,65 @@ function removeCCBHelperButtons() {
     if (container) container.remove();
 }
 
+// 关闭建行日历弹窗
+async function closeCCBCalendarPopup() {
+    try {
+        console.log('建行：尝试关闭日历弹窗');
+
+        // 1. My97DatePicker 日历 - 最常见的建行日历控件
+        const my97DP = document.getElementById('_my97DP');
+        if (my97DP) {
+            my97DP.style.display = 'none';
+            my97DP.style.visibility = 'hidden';
+            console.log('建行：隐藏My97日历成功');
+            return;
+        }
+
+        // 2. 查找iframe中的日历（My97DatePicker通常用iframe）
+        const calendarIframe = document.querySelector('iframe[id*="97"], iframe[src*="calendar"], iframe[src*="datePicker"]');
+        if (calendarIframe && calendarIframe.parentElement) {
+            calendarIframe.parentElement.style.display = 'none';
+            console.log('建行：隐藏日历iframe成功');
+            return;
+        }
+
+        // 3. 查找包含"今天"和"清空"按钮的div
+        const allDivs = document.querySelectorAll('div');
+        for (const div of allDivs) {
+            const style = window.getComputedStyle(div);
+            if (style.position === 'absolute' && style.display !== 'none') {
+                const text = div.textContent || '';
+                // 检查是否包含日历特征文字
+                if ((text.includes('今天') && text.includes('清空')) ||
+                    (text.includes('日') && text.includes('一') && text.includes('二') && text.includes('三'))) {
+                    div.style.display = 'none';
+                    console.log('建行：通过特征文字隐藏日历成功');
+                    return;
+                }
+            }
+        }
+
+        // 4. 尝试调用日历的关闭方法
+        if (typeof WdatePicker !== 'undefined' && WdatePicker.dp && WdatePicker.dp.hide) {
+            WdatePicker.dp.hide();
+            console.log('建行：调用WdatePicker.hide()');
+            return;
+        }
+
+        // 5. 点击日期输入框触发blur
+        const dateInput = document.querySelector('input[onclick*="WdatePicker"], input[onfocus*="WdatePicker"]');
+        if (dateInput) {
+            dateInput.blur();
+            // 同时点击页面其他区域
+            document.body.click();
+            console.log('建行：触发日期输入框blur');
+        }
+
+    } catch (error) {
+        console.log('建行：关闭日历弹窗出错', error);
+    }
+}
+
 // 填写预约日期（点击日历选择第一个可用日期）
 async function fillCCBDate() {
     try {
@@ -733,6 +836,11 @@ async function fillCCBDate() {
             if (text === '20' || text === '21' || text === '22') {
                 day.click();
                 console.log('建行：已选择日期', text);
+
+                // 等待一下然后关闭日历弹窗
+                await sleep(300);
+                await closeCCBCalendarPopup();
+
                 return { success: true, date: text };
             }
         }
@@ -1104,43 +1212,73 @@ async function selectBranchByAPI(data, districtSelect) {
                     
                     console.log('建行API：找到搜索结果，准备选择网点:', branchName);
                     console.log('建行API：链接href:', firstResult.href);
-                    
-                    // 从href中提取网点名称
-                    const hrefMatch = firstResult.href.match(/\$query_getClickValue\("([^"]+)"\)/);
+
+                    // 从href中提取网点名称 - 支持多种函数名格式
+                    // 可能是 $query_getClickValue 或 Query_getClickValue
+                    let hrefMatch = firstResult.href.match(/\$query_getClickValue\("([^"]+)"\)/);
+                    let funcName = '$query_getClickValue';
+
+                    if (!hrefMatch) {
+                        // 尝试不带$的版本
+                        hrefMatch = firstResult.href.match(/Query_getClickValue\("([^"]+)"\)/i);
+                        funcName = 'Query_getClickValue';
+                    }
+
                     if (hrefMatch) {
-                        const targetBranchName = hrefMatch[1];
-                        console.log('建行API：准备选择网点', targetBranchName);
+                        // 解码URL编码的网点名称
+                        const targetBranchNameEncoded = hrefMatch[1];
+                        let targetBranchName;
+                        try {
+                            targetBranchName = decodeURIComponent(targetBranchNameEncoded);
+                        } catch (e) {
+                            targetBranchName = targetBranchNameEncoded; // 解码失败则使用原值
+                        }
+                        console.log('建行API：准备选择网点', targetBranchName, '(编码:', targetBranchNameEncoded, ') 使用函数:', funcName);
 
                         // 通过 background service worker 在页面主世界执行（绕过CSP）
-                        const result = await executeInMainWorld('$query_getClickValue', targetBranchName);
+                        let result = await executeInMainWorld(funcName, targetBranchName);
                         if (result && result.success) {
                             clicked = true;
                             console.log('建行API：通过主世界脚本选择成功');
                         } else {
-                            console.log('建行API：主世界执行失败', result?.error);
-                            // 备用方案：尝试旧的注入方法
-                            injectAndCallFunction('$query_getClickValue', targetBranchName);
-                            clicked = true;
+                            console.log('建行API：主世界执行失败', result?.error, '尝试备用函数名');
+                            // 尝试另一个函数名
+                            const altFuncName = funcName === '$query_getClickValue' ? 'Query_getClickValue' : '$query_getClickValue';
+                            result = await executeInMainWorld(altFuncName, targetBranchName);
+                            if (result && result.success) {
+                                clicked = true;
+                                console.log('建行API：通过备用函数名选择成功');
+                            } else {
+                                // 备用方案：尝试旧的注入方法
+                                injectAndCallFunction(funcName, targetBranchName);
+                                clicked = true;
+                            }
                         }
                     } else {
                         // 尝试从onclick属性提取
                         const onclickAttr = firstResult.getAttribute('onclick') || '';
-                        const onclickMatch = onclickAttr.match(/\$query_getClickValue\("([^"]+)"\)/);
+                        let onclickMatch = onclickAttr.match(/\$query_getClickValue\("([^"]+)"\)/);
+                        let onclickFuncName = '$query_getClickValue';
+                        if (!onclickMatch) {
+                            onclickMatch = onclickAttr.match(/Query_getClickValue\("([^"]+)"\)/i);
+                            onclickFuncName = 'Query_getClickValue';
+                        }
+
                         if (onclickMatch) {
-                            const targetBranchName = onclickMatch[1];
-                            await executeInMainWorld('$query_getClickValue', targetBranchName);
+                            // 解码URL编码的网点名称
+                            let targetBranchName;
+                            try {
+                                targetBranchName = decodeURIComponent(onclickMatch[1]);
+                            } catch (e) {
+                                targetBranchName = onclickMatch[1];
+                            }
+                            await executeInMainWorld(onclickFuncName, targetBranchName);
                             clicked = true;
                             console.log('建行API：通过onclick属性选择成功');
                         } else {
-                            // 最后备用：模拟鼠标事件（不触发href）
-                            console.log('建行API：尝试模拟鼠标事件');
-                            const mouseEvent = new MouseEvent('click', {
-                                bubbles: true,
-                                cancelable: true,
-                                view: window
-                            });
-                            // 阻止默认行为后手动触发
-                            firstResult.dispatchEvent(mouseEvent);
+                            // 最后备用：直接点击链接元素
+                            console.log('建行API：尝试直接点击链接');
+                            firstResult.click();
                             clicked = true;
                         }
                     }
