@@ -566,25 +566,20 @@ async function fillCCBFormAsync(data) {
     };
 }
 
-// 等待短信验证码填写完成
+// 等待用户点击"继续"按钮
 async function waitForSMSCode() {
-    const smsInput = findInputByLabel('短信验证码');
-    if (!smsInput) {
-        return { success: false, error: '未找到短信验证码输入框' };
-    }
-    
-    const startTime = Date.now();
-    
-    while (Date.now() - startTime < CCB_CONFIG.SMS_CHECK_TIMEOUT) {
-        const value = smsInput.value.trim();
-        if (value.length >= 4) {
-            console.log('建行：检测到短信验证码已填写');
-            return { success: true, code: value };
-        }
-        await sleep(CCB_CONFIG.SMS_CHECK_INTERVAL);
-    }
-    
-    return { success: false, error: '等待超时' };
+    return new Promise((resolve) => {
+        // 设置一个全局回调，当用户点击"继续"按钮时调用
+        window._ccbContinueCallback = () => {
+            const smsInput = findInputByLabel('短信验证码');
+            const value = smsInput ? smsInput.value.trim() : '';
+            console.log('建行：用户点击继续，短信验证码:', value);
+            resolve({ success: true, code: value });
+        };
+        
+        console.log('建行：等待用户点击"继续"按钮...');
+        updateCCBStatus('请输入短信验证码后点击"继续"');
+    });
 }
 
 // 添加辅助按钮到页面
@@ -614,38 +609,14 @@ function addCCBHelperButtons(data) {
         continueBtn.style.cssText = 'margin-left:10px;padding:8px 15px;background:#28a745;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;';
         smsLi.appendChild(continueBtn);
         
-        // 绑定继续按钮事件
-        continueBtn.addEventListener('click', async () => {
-            continueBtn.disabled = true;
-            continueBtn.textContent = '处理中...';
-            updateCCBStatus('正在选择网点...');
-            
-            try {
-                const regionResult = await selectCCBRegionAndBranch(data);
-                const dateResult = await fillCCBDate();
-                
-                if (data.appointmentQuantity) {
-                    const qtyInput = findInputByLabel('兑换数量');
-                    if (qtyInput) {
-                        qtyInput.value = data.appointmentQuantity;
-                        triggerEvent(qtyInput, 'input');
-                    }
-                }
-                
-                const checkbox = document.querySelector('input[type="checkbox"]');
-                if (checkbox && !checkbox.checked) checkbox.click();
-                
-                if (regionResult.branchName) {
-                    updateCCBStatus('✓ 已选择: ' + regionResult.branchName);
-                } else {
-                    updateCCBStatus('✓ 完成');
-                }
-            } catch (error) {
-                updateCCBStatus('✗ 失败: ' + error.message);
+        // 绑定继续按钮事件 - 调用全局回调触发后续流程
+        continueBtn.addEventListener('click', () => {
+            if (window._ccbContinueCallback) {
+                continueBtn.disabled = true;
+                continueBtn.textContent = '处理中...';
+                window._ccbContinueCallback();
+                window._ccbContinueCallback = null;
             }
-            
-            continueBtn.disabled = false;
-            continueBtn.textContent = '▶ 继续';
         });
     }
     
