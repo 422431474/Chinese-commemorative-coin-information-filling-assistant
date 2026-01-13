@@ -944,8 +944,10 @@ async function findBestBranchAcrossDistricts(data, provinceSelect, citySelect, d
 function selectOptionNative(select, text) {
     for (let i = 0; i < select.options.length; i++) {
         if (select.options[i].text.includes(text)) {
-            select.value = select.options[i].value;
+            // 先设置selectedIndex
             select.selectedIndex = i;
+            // 再设置value
+            select.value = select.options[i].value;
             
             // 更新建行自定义下拉框的显示文本（select前面的div）
             const displayDiv = select.previousElementSibling;
@@ -953,12 +955,13 @@ function selectOptionNative(select, text) {
                 displayDiv.textContent = select.options[i].text;
             }
             
-            // 触发change事件
-            const evt = document.createEvent('HTMLEvents');
-            evt.initEvent('change', true, true);
-            select.dispatchEvent(evt);
+            // 使用多种方式触发change事件确保兼容性
+            select.dispatchEvent(new Event('change', { bubbles: true }));
             
-            console.log('建行：下拉框选择成功', text, '值:', select.value);
+            // 额外触发input事件
+            select.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            console.log('建行：下拉框选择成功', text, '值:', select.value, 'index:', i);
             return true;
         }
     }
