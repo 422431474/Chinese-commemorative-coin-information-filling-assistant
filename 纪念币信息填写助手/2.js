@@ -1029,24 +1029,23 @@ async function selectBranchByAPI(data, districtSelect) {
                 console.log('建行API：搜索结果数量', results.length, '重试', retry);
                 
                 if (results.length > 0) {
-                    // 从搜索结果中提取网点名称并调用页面函数
+                    // 从搜索结果中提取网点名称
                     const firstResult = results[0];
                     const branchNameMatch = firstResult.textContent.match(/^([^可]+)/);
                     const branchName = branchNameMatch ? branchNameMatch[1].trim() : '';
                     
                     console.log('建行API：选择网点', branchName);
                     
-                    // 直接调用页面的$query_getClickValue函数
-                    if (typeof $query_getClickValue === 'function' && branchName) {
-                        $query_getClickValue(branchName);
-                        clicked = true;
-                        console.log('建行API：调用$query_getClickValue成功');
-                    } else {
-                        // 备用方案：点击链接
-                        firstResult.click();
-                        clicked = true;
-                        console.log('建行API：点击链接');
-                    }
+                    // 使用完整的鼠标事件模拟点击
+                    const mouseDown = new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window });
+                    const mouseUp = new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window });
+                    const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true, view: window });
+                    
+                    firstResult.dispatchEvent(mouseDown);
+                    firstResult.dispatchEvent(mouseUp);
+                    firstResult.dispatchEvent(clickEvent);
+                    clicked = true;
+                    console.log('建行API：模拟点击完成');
                     
                     // 等待并关闭可能出现的弹窗
                     await sleep(500);
