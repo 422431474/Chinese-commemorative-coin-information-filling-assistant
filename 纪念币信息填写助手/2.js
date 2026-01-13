@@ -958,22 +958,41 @@ async function findBestBranchAcrossDistricts(data, provinceSelect, citySelect, d
 function selectOptionNative(select, text) {
     for (let i = 0; i < select.options.length; i++) {
         if (select.options[i].text.includes(text)) {
-            // 先设置selectedIndex
+            // 模拟用户点击选择的完整流程
+            select.focus();
+            
+            // 设置选中状态
+            select.options[i].selected = true;
             select.selectedIndex = i;
-            // 再设置value
             select.value = select.options[i].value;
             
-            // 更新建行自定义下拉框的显示文本（select前面的div）
+            // 更新建行自定义下拉框的显示文本
             const displayDiv = select.previousElementSibling;
             if (displayDiv && displayDiv.tagName === 'DIV') {
                 displayDiv.textContent = select.options[i].text;
             }
             
-            // 使用多种方式触发change事件确保兼容性
-            select.dispatchEvent(new Event('change', { bubbles: true }));
+            // 创建并触发MouseEvent模拟真实点击
+            const mouseEvent = new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+                view: window
+            });
+            select.dispatchEvent(mouseEvent);
             
-            // 额外触发input事件
+            // 触发change事件
+            const changeEvent = new Event('change', { bubbles: true, cancelable: true });
+            select.dispatchEvent(changeEvent);
+            
+            // 触发input事件
             select.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            // 如果页面有jQuery，也用jQuery触发
+            if (typeof jQuery !== 'undefined') {
+                jQuery(select).trigger('change');
+            }
+            
+            select.blur();
             
             console.log('建行：下拉框选择成功', text, '值:', select.value, 'index:', i);
             return true;
