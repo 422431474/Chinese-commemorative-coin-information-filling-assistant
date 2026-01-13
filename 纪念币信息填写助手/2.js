@@ -1021,24 +1021,32 @@ async function selectBranchByAPI(data, districtSelect) {
             branchInput.dispatchEvent(new Event('input', { bubbles: true }));
             branchInput.dispatchEvent(new Event('change', { bubbles: true }));
             
-            await sleep(1000);
-            
-            // 查找并点击匹配的搜索结果
-            const results = document.querySelectorAll('li a[href*="getClickValue"]');
+            // 等待搜索结果加载，带重试
             let clicked = false;
-            for (const result of results) {
-                if (result.textContent.includes(selectedBranch.name)) {
-                    result.click();
-                    clicked = true;
-                    console.log('建行API：点击搜索结果', result.textContent);
+            for (let retry = 0; retry < 5; retry++) {
+                await sleep(800);
+                const results = document.querySelectorAll('li a[href*="getClickValue"]');
+                console.log('建行API：搜索结果数量', results.length, '重试', retry);
+                
+                if (results.length > 0) {
+                    // 优先点击精确匹配的结果
+                    for (const result of results) {
+                        if (result.textContent.includes(selectedBranch.name)) {
+                            result.click();
+                            clicked = true;
+                            console.log('建行API：点击搜索结果', result.textContent);
+                            break;
+                        }
+                    }
+                    
+                    // 如果没找到精确匹配，点击第一个结果
+                    if (!clicked) {
+                        results[0].click();
+                        clicked = true;
+                        console.log('建行API：点击第一个搜索结果');
+                    }
                     break;
                 }
-            }
-            
-            // 如果没找到精确匹配，点击第一个结果
-            if (!clicked && results.length > 0) {
-                results[0].click();
-                console.log('建行API：点击第一个搜索结果');
             }
             
             await sleep(500);
