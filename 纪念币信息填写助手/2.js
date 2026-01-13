@@ -904,22 +904,27 @@ async function findBestBranchAcrossDistricts(data, provinceSelect, citySelect, d
     if (bestBranch && bestDistrict) {
         console.log('建行：选择最佳区县', bestDistrict.name, '网点', bestBranch.name);
         
-        // 选择区县
-        districtSelect.selectedIndex = bestDistrict.index;
-        const evt = document.createEvent('HTMLEvents');
-        evt.initEvent('change', true, true);
-        districtSelect.dispatchEvent(evt);
+        // 使用原生方式选择区县（确保触发change事件）
+        selectOptionNative(districtSelect, bestDistrict.name);
+        await sleep(1500);
         
-        await sleep(1000);
-        
-        // 填写网点
+        // 填写网点名称到搜索框
         const branchInput = document.querySelector('input[placeholder*="网点"]');
         if (branchInput) {
             branchInput.value = bestBranch.name;
             branchInput.dispatchEvent(new Event('input', { bubbles: true }));
-            await sleep(800);
-            const firstResult = document.querySelector('li a[href*="getClickValue"]');
-            if (firstResult) firstResult.click();
+            branchInput.dispatchEvent(new Event('change', { bubbles: true }));
+            await sleep(1000);
+            
+            // 点击搜索结果中的第一个匹配项
+            const searchResults = document.querySelectorAll('li a[href*="getClickValue"]');
+            for (const result of searchResults) {
+                if (result.textContent.includes(bestBranch.name)) {
+                    result.click();
+                    await sleep(500);
+                    break;
+                }
+            }
         }
         
         return { success: true, branchName: bestBranch.name, stock: bestBranch.stock, district: bestDistrict.name };
