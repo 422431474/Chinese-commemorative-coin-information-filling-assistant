@@ -1029,13 +1029,26 @@ async function selectBranchByAPI(data, districtSelect) {
                 console.log('建行API：搜索结果数量', results.length, '重试', retry);
                 
                 if (results.length > 0) {
-                    // 直接点击第一个搜索结果（搜索关键字已经是网点名称）
+                    // 从搜索结果中提取网点名称并调用页面函数
                     const firstResult = results[0];
-                    console.log('建行API：点击搜索结果', firstResult.textContent);
-                    firstResult.click();
-                    clicked = true;
+                    const branchNameMatch = firstResult.textContent.match(/^([^可]+)/);
+                    const branchName = branchNameMatch ? branchNameMatch[1].trim() : '';
                     
-                    // 等待并关闭可能出现的"此网点暂时不可预约"弹窗
+                    console.log('建行API：选择网点', branchName);
+                    
+                    // 直接调用页面的$query_getClickValue函数
+                    if (typeof $query_getClickValue === 'function' && branchName) {
+                        $query_getClickValue(branchName);
+                        clicked = true;
+                        console.log('建行API：调用$query_getClickValue成功');
+                    } else {
+                        // 备用方案：点击链接
+                        firstResult.click();
+                        clicked = true;
+                        console.log('建行API：点击链接');
+                    }
+                    
+                    // 等待并关闭可能出现的弹窗
                     await sleep(500);
                     const confirmBtn = document.querySelector('.que2, .layui-layer-btn0');
                     if (confirmBtn) {
