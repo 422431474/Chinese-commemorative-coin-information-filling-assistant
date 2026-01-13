@@ -353,7 +353,43 @@ Usage Restrictions:
 
 Strictly prohibited for commercial use.Comply with the appointment rules of each bank.Must not be used for illegal or noncompliant activities.
 
-### 四、故障排除/IV. Troubleshooting
+### 四、验证码识别服务/IV. Captcha Recognition Service
+
+本项目提供本地验证码识别服务，用于自动识别银行预约页面的图形验证码。
+
+**启动命令：**
+
+```bash
+# 进入项目目录
+cd ccb-auto-booking
+
+# 安装依赖（首次使用）
+pip install ddddocr
+
+# 启动OCR服务
+python ocr_server.py
+```
+
+服务启动后将在 `http://127.0.0.1:9898` 监听，Chrome 扩展会自动调用此服务识别验证码。
+
+This project provides a local captcha recognition service for automatically identifying graphic captchas on bank reservation pages.
+
+**Start Command:**
+
+```bash
+# Enter project directory
+cd ccb-auto-booking
+
+# Install dependencies (first time only)
+pip install ddddocr
+
+# Start OCR service
+python ocr_server.py
+```
+
+After starting, the service will listen on `http://127.0.0.1:9898`, and the Chrome extension will automatically call this service to recognize captchas.
+
+### 五、故障排除/V. Troubleshooting
 
 填充失败：
 
