@@ -435,11 +435,13 @@ async function recognizeCaptcha(base64Image) {
 // 建设银行配置：选择模式
 const CCB_CONFIG = {
     MODE: 'api', // 'api' = 接口模式(优先选择有库存), 'dropdown' = 下拉模式(按顺序选择)
+    AUTO_FIND_STOCK: true, // 自动遍历所有区县查找有库存的网点
+    MIN_STOCK: 20, // 最小库存要求
     DEFAULT_PROVINCE: '北京市',
     DEFAULT_CITY: '市辖区',
     DEFAULT_DISTRICT: '朝阳区',
-    SMS_CHECK_INTERVAL: 1000, // 检测短信验证码的间隔(毫秒)
-    SMS_CHECK_TIMEOUT: 120000 // 等待短信验证码的超时时间(毫秒)
+    SMS_CHECK_INTERVAL: 1000,
+    SMS_CHECK_TIMEOUT: 120000
 };
 
 // 建设银行异步填写表单（分步骤执行）
@@ -707,7 +709,7 @@ async function selectCCBRegionAndBranch(data) {
         const citySelect = allSelects[1];
         const districtSelect = allSelects[2];
         
-        // 选择省份（使用原生方式触发change）
+        // 选择省份
         const province = data.province || CCB_CONFIG.DEFAULT_PROVINCE;
         if (selectOptionNative(provinceSelect, province)) {
             filledCount++;
@@ -727,7 +729,23 @@ async function selectCCBRegionAndBranch(data) {
         
         await sleep(1500);
         
-        // 选择区县
+        // 如果开启自动查找库存，遍历所有区县
+        if (CCB_CONFIG.AUTO_FIND_STOCK && CCB_CONFIG.MODE === 'api') {
+            updateCCBStatus('正在搜索有库存的网点...');
+            const bestResult = await findBestBranchAcrossDistricts(data, provinceSelect, citySelect, districtSelect);
+            if (bestResult.success) {
+                branchName = bestResult.branchName;
+                filledCount += 4; // 区县+网点
+                console.log('建行：找到有库存网点', bestResult.branchName, '库存:', bestResult.stock);
+                updateCCBStatus('✓ 找到: ' + bestResult.branchName + ' (库存:' + bestResult.stock + ')');
+                return { filledCount, branchName };
+            } else {
+                console.log('建行：未找到库存>=', CCB_CONFIG.MIN_STOCK, '的网点，使用默认区县');
+                updateCCBStatus('未找到足够库存，使用默认区县');
+            }
+        }
+        
+        // 默认选择区县
         const district = data.district || CCB_CONFIG.DEFAULT_DISTRICT;
         if (districtSelect.options.length > 1) {
             if (selectOptionNative(districtSelect, district) || selectOptionByIndex(districtSelect, 1)) {
@@ -738,7 +756,7 @@ async function selectCCBRegionAndBranch(data) {
         
         await sleep(1500);
         
-        // 根据模式选择网点
+        // 选择网点
         if (CCB_CONFIG.MODE === 'api') {
             const branchResult = await selectBranchByAPI(data, districtSelect);
             if (branchResult.success) {
@@ -758,6 +776,81 @@ async function selectCCBRegionAndBranch(data) {
     }
     
     return { filledCount, branchName };
+}
+
+// 遍历所有区县查找库存最多的网点
+async function findBestBranchAcrossDistricts(data, provinceSelect, citySelect, districtSelect) {
+    const productId = getProductId();
+    let bestBranch = null;
+    let bestDistrict = null;
+    
+    console.log('建行：开始遍历所有区县查找库存...');
+    
+    // 遍历所有区县
+    for (let i = 1; i < districtSelect.options.length; i++) {
+        const option = districtSelect.options[i];
+        const districtCode = option.value;
+        const districtName = option.text;
+        
+        if (!districtCode || districtCode === '区/县') continue;
+        
+        console.log('建行：检查区县', districtName, '代码:', districtCode);
+        updateCCBStatus('检查: ' + districtName + '...');
+        
+        try {
+            const url = `https://jinianbi.ccb.com/tran/WCCMainPlatV5?CCB_IBSVersion=V5&SERVLET_NAME=WCCMainPlatV5&isAjaxRequest=true&TXCODE=NYB004&CntyAndDstc_Cd=${districtCode}&PRODUCT_ID=${productId}&JNB_DATE_TYPE=0&CRDT_NO=${data.idCard}`;
+            
+            const response = await fetch(url, { method: 'POST', credentials: 'include' });
+            const text = await response.text();
+            
+            const banksMatch = text.match(/var banks=\[([\s\S]*?)\];/);
+            if (banksMatch) {
+                const regex = /\{WDMC:'([^']+)',[\s\S]*?JNBZS:'(\d+)'/g;
+                let m;
+                while ((m = regex.exec(banksMatch[1])) !== null) {
+                    const stock = parseInt(m[2]);
+                    if (stock >= CCB_CONFIG.MIN_STOCK) {
+                        if (!bestBranch || stock > bestBranch.stock) {
+                            bestBranch = { name: m[1], stock: stock };
+                            bestDistrict = { index: i, code: districtCode, name: districtName };
+                            console.log('建行：发现有库存网点', m[1], '库存:', stock);
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.log('建行：检查区县失败', districtName, e.message);
+        }
+        
+        await sleep(300); // 避免请求过快
+    }
+    
+    // 如果找到有库存的网点，选择对应的区县和网点
+    if (bestBranch && bestDistrict) {
+        console.log('建行：选择最佳区县', bestDistrict.name, '网点', bestBranch.name);
+        
+        // 选择区县
+        districtSelect.selectedIndex = bestDistrict.index;
+        const evt = document.createEvent('HTMLEvents');
+        evt.initEvent('change', true, true);
+        districtSelect.dispatchEvent(evt);
+        
+        await sleep(1000);
+        
+        // 填写网点
+        const branchInput = document.querySelector('input[placeholder*="网点"]');
+        if (branchInput) {
+            branchInput.value = bestBranch.name;
+            branchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            await sleep(800);
+            const firstResult = document.querySelector('li a[href*="getClickValue"]');
+            if (firstResult) firstResult.click();
+        }
+        
+        return { success: true, branchName: bestBranch.name, stock: bestBranch.stock, district: bestDistrict.name };
+    }
+    
+    return { success: false };
 }
 
 // 原生方式选择下拉选项（兼容建行页面）
