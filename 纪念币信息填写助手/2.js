@@ -687,38 +687,51 @@ function removeCCBHelperButtons() {
 function fillCCBDate() {
     try {
         const dateInput = findInputByLabel('兑换日期');
-        if (!dateInput) return { success: false };
-        
-        // 获取兑换起止日
-        const startDateEl = document.querySelector('li:has(*:contains("兑换日期")) [class*="date"], li:has(*:contains("兑换起止日")) ~ *');
-        let startDate = '20260120'; // 默认值
-        
-        // 尝试从页面获取起始日期
-        const allElements = document.querySelectorAll('*');
-        for (const el of allElements) {
-            const text = el.textContent || '';
-            const match = text.match(/兑换起止日[：:]\s*(\d{8})/);
-            if (match) {
-                startDate = match[1];
-                break;
-            }
+        if (!dateInput) {
+            console.log('建行：未找到日期输入框');
+            return { success: false };
         }
         
-        // 查找页面上显示的起始日期
-        const dateTexts = document.body.innerText.match(/20\d{6}/g);
-        if (dateTexts && dateTexts.length > 0) {
-            for (const dt of dateTexts) {
-                if (dt >= '20260120' && dt <= '20260126') {
-                    startDate = dt;
+        let startDate = '';
+        
+        // 方法1：查找页面上的兑换起止日文本
+        const allLis = document.querySelectorAll('li');
+        for (const li of allLis) {
+            const text = li.textContent || '';
+            if (text.includes('兑换起止日') || text.includes('兑换日期')) {
+                const match = text.match(/(\d{8})/);
+                if (match) {
+                    startDate = match[1];
+                    console.log('建行：从页面获取到日期', startDate);
                     break;
                 }
             }
         }
         
-        dateInput.value = startDate;
-        triggerEvent(dateInput, 'input');
-        triggerEvent(dateInput, 'change');
+        // 方法2：查找包含日期的div
+        if (!startDate) {
+            const divs = document.querySelectorAll('div');
+            for (const div of divs) {
+                const text = div.textContent || '';
+                if (text.match(/^\d{8}$/) && text.startsWith('202')) {
+                    startDate = text;
+                    console.log('建行：从div获取到日期', startDate);
+                    break;
+                }
+            }
+        }
         
+        // 方法3：使用默认值
+        if (!startDate) {
+            startDate = '20260120';
+            console.log('建行：使用默认日期', startDate);
+        }
+        
+        dateInput.value = startDate;
+        dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+        dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+        
+        console.log('建行：已填写日期', startDate);
         return { success: true, date: startDate };
     } catch (error) {
         console.error('建行：填写日期失败', error);
@@ -763,18 +776,24 @@ async function selectCCBRegionAndBranch(data) {
             console.log('建行：已选择省份', province);
         }
         
-        await sleep(1500);
+        // 等待城市下拉框加载
+        await sleep(2000);
         
-        // 选择城市
+        // 选择城市 - 等待选项加载
         const city = data.city || CCB_CONFIG.DEFAULT_CITY;
-        if (citySelect.options.length > 1) {
-            if (selectOptionNative(citySelect, city) || selectOptionByIndex(citySelect, 1)) {
-                filledCount++;
-                console.log('建行：已选择城市');
+        for (let retry = 0; retry < 5; retry++) {
+            if (citySelect.options.length > 1) {
+                if (selectOptionNative(citySelect, city) || selectOptionByIndex(citySelect, 1)) {
+                    filledCount++;
+                    console.log('建行：已选择城市', citySelect.options[citySelect.selectedIndex].text);
+                    break;
+                }
             }
+            await sleep(500);
         }
         
-        await sleep(1500);
+        // 等待区县下拉框加载
+        await sleep(2000);
         
         // 如果开启自动查找库存，遍历所有区县
         if (CCB_CONFIG.AUTO_FIND_STOCK && CCB_CONFIG.MODE === 'api') {
