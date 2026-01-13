@@ -350,6 +350,17 @@ function findInputByLabel(labelText) {
     return null;
 }
 
+function findLiByLabel(labelText) {
+    const allLis = document.querySelectorAll('li');
+    for (const li of allLis) {
+        const text = li.textContent || '';
+        if (text.includes(labelText)) {
+            return li;
+        }
+    }
+    return null;
+}
+
 // 建设银行验证码识别
 async function solveCCBCaptcha() {
     try {
@@ -580,6 +591,7 @@ async function waitForSMSCode() {
 function addCCBHelperButtons(data) {
     if (document.getElementById('ccb-helper-container')) return;
     
+    // 在右上角添加辅助面板
     const container = document.createElement('div');
     container.id = 'ccb-helper-container';
     container.style.cssText = 'position:fixed;top:10px;right:10px;z-index:99999;background:#fff;padding:15px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.2);font-family:Arial,sans-serif;min-width:180px;';
@@ -587,17 +599,55 @@ function addCCBHelperButtons(data) {
     container.innerHTML = `
         <div style="font-size:14px;font-weight:bold;margin-bottom:10px;color:#0066cc;">🪙 纪念币助手</div>
         <button id="ccb-refresh-captcha" style="display:block;width:100%;padding:10px 15px;margin-bottom:8px;background:#0066cc;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">🔄 刷新验证码</button>
-        <button id="ccb-continue" style="display:block;width:100%;padding:10px 15px;margin-bottom:8px;background:#28a745;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">▶ 继续选择网点</button>
         <div id="ccb-status" style="font-size:12px;color:#666;margin-top:5px;padding:5px;background:#f5f5f5;border-radius:4px;"></div>
-        <div style="font-size:11px;color:#888;margin-top:8px;line-height:1.5;">
-            <p style="margin:3px 0;">1. 点击"获取验证码"</p>
-            <p style="margin:3px 0;">2. 输入短信验证码</p>
-            <p style="margin:3px 0;">3. 点击"继续选择网点"</p>
-        </div>
     `;
     
     document.body.appendChild(container);
     updateCCBStatus('等待操作...');
+    
+    // 在短信验证码输入框旁边添加"继续"按钮
+    const smsLi = findLiByLabel('短信验证码');
+    if (smsLi) {
+        const continueBtn = document.createElement('button');
+        continueBtn.id = 'ccb-continue-inline';
+        continueBtn.textContent = '▶ 继续';
+        continueBtn.style.cssText = 'margin-left:10px;padding:8px 15px;background:#28a745;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;';
+        smsLi.appendChild(continueBtn);
+        
+        // 绑定继续按钮事件
+        continueBtn.addEventListener('click', async () => {
+            continueBtn.disabled = true;
+            continueBtn.textContent = '处理中...';
+            updateCCBStatus('正在选择网点...');
+            
+            try {
+                const regionResult = await selectCCBRegionAndBranch(data);
+                const dateResult = await fillCCBDate();
+                
+                if (data.appointmentQuantity) {
+                    const qtyInput = findInputByLabel('兑换数量');
+                    if (qtyInput) {
+                        qtyInput.value = data.appointmentQuantity;
+                        triggerEvent(qtyInput, 'input');
+                    }
+                }
+                
+                const checkbox = document.querySelector('input[type="checkbox"]');
+                if (checkbox && !checkbox.checked) checkbox.click();
+                
+                if (regionResult.branchName) {
+                    updateCCBStatus('✓ 已选择: ' + regionResult.branchName);
+                } else {
+                    updateCCBStatus('✓ 完成');
+                }
+            } catch (error) {
+                updateCCBStatus('✗ 失败: ' + error.message);
+            }
+            
+            continueBtn.disabled = false;
+            continueBtn.textContent = '▶ 继续';
+        });
+    }
     
     // 绑定刷新验证码按钮事件
     document.getElementById('ccb-refresh-captcha').addEventListener('click', async () => {
@@ -620,52 +670,6 @@ function addCCBHelperButtons(data) {
         
         btn.disabled = false;
         btn.textContent = '🔄 刷新验证码';
-    });
-    
-    // 绑定继续选择网点按钮事件
-    document.getElementById('ccb-continue').addEventListener('click', async () => {
-        const btn = document.getElementById('ccb-continue');
-        btn.disabled = true;
-        btn.textContent = '处理中...';
-        updateCCBStatus('正在选择网点...');
-        
-        try {
-            // 选择省市区并选择有库存的网点
-            const regionResult = await selectCCBRegionAndBranch(data);
-            
-            // 填写预约日期
-            const dateResult = await fillCCBDate();
-            if (dateResult.success) {
-                console.log('建行：已填写预约日期', dateResult.date);
-            }
-            
-            // 填写预约数量
-            if (data.appointmentQuantity) {
-                const qtyInput = findInputByLabel('兑换数量');
-                if (qtyInput) {
-                    qtyInput.value = data.appointmentQuantity;
-                    triggerEvent(qtyInput, 'input');
-                }
-            }
-            
-            // 勾选协议
-            const checkbox = document.querySelector('input[type="checkbox"]');
-            if (checkbox && !checkbox.checked) {
-                checkbox.click();
-            }
-            
-            if (regionResult.branchName) {
-                updateCCBStatus('✓ 已选择: ' + regionResult.branchName);
-            } else {
-                updateCCBStatus('✓ 网点选择完成');
-            }
-        } catch (error) {
-            console.error('建行：选择网点失败', error);
-            updateCCBStatus('✗ 选择失败: ' + error.message);
-        }
-        
-        btn.disabled = false;
-        btn.textContent = '▶ 继续选择网点';
     });
 }
 
