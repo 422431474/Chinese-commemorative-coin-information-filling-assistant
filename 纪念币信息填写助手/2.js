@@ -795,16 +795,30 @@ async function selectCCBRegionAndBranch(data) {
         
         // 选择城市 - 等待选项加载
         const city = data.city || CCB_CONFIG.DEFAULT_CITY;
-        for (let retry = 0; retry < 10; retry++) {
+        let citySelected = false;
+        for (let retry = 0; retry < 15; retry++) {
             console.log('建行：城市选择重试', retry, '选项数:', citySelect.options.length);
             if (citySelect.options.length > 1) {
-                if (selectOptionNative(citySelect, city) || selectOptionByIndex(citySelect, 1)) {
+                // 优先匹配用户指定的城市，否则选择第一个有效选项
+                if (selectOptionNative(citySelect, city)) {
+                    citySelected = true;
+                } else if (selectOptionByIndex(citySelect, 1)) {
+                    citySelected = true;
+                }
+                if (citySelected) {
                     filledCount++;
-                    console.log('建行：已选择城市', citySelect.options[citySelect.selectedIndex].text);
+                    console.log('建行：已选择城市', citySelect.options[citySelect.selectedIndex].text, '值:', citySelect.value);
                     break;
                 }
             }
             await sleep(500);
+        }
+        
+        if (!citySelected) {
+            console.log('建行：城市选择失败，尝试强制选择第一个');
+            if (citySelect.options.length > 1) {
+                selectOptionByIndex(citySelect, 1);
+            }
         }
         
         // 等待区县下拉框加载
