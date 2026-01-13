@@ -961,10 +961,11 @@ function selectOptionNative(select, text) {
             // 使用原生方式设置选中状态
             select.value = select.options[i].value;
             
-            // 更新建行自定义下拉框的显示文本
-            const displayDiv = select.previousElementSibling;
-            if (displayDiv && displayDiv.tagName === 'DIV') {
+            // 更新建行自定义下拉框的显示文本（class="cur_select"的div）
+            const displayDiv = select.parentElement?.querySelector('.cur_select');
+            if (displayDiv) {
                 displayDiv.textContent = select.options[i].text;
+                console.log('建行：更新显示文本为', select.options[i].text);
             }
             
             // 触发change事件 - 使用createEvent确保兼容性
