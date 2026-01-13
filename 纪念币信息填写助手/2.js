@@ -1141,8 +1141,20 @@ function selectOptionByText(select, text) {
 // 辅助函数：通过索引选择下拉选项
 function selectOptionByIndex(select, index) {
     if (select.options.length > index) {
-        select.selectedIndex = index;
-        triggerEvent(select, 'change');
+        select.value = select.options[index].value;
+        
+        // 更新建行自定义下拉框的显示文本（class="cur_select"的div）
+        const displayDiv = select.parentElement?.querySelector('.cur_select');
+        if (displayDiv) {
+            displayDiv.textContent = select.options[index].text;
+        }
+        
+        // 触发change事件
+        const changeEvent = document.createEvent('HTMLEvents');
+        changeEvent.initEvent('change', true, true);
+        select.dispatchEvent(changeEvent);
+        
+        console.log('建行：selectOptionByIndex 选择', select.options[index].text);
         return true;
     }
     return false;
