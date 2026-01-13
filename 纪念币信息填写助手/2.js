@@ -1017,9 +1017,11 @@ async function selectBranchByAPI(data, districtSelect) {
             
             // 输入网点名称的关键字（取前几个字）
             const keyword = selectedBranch.name.substring(0, 6);
+            console.log('建行API：输入搜索关键字', keyword);
             branchInput.value = keyword;
             branchInput.dispatchEvent(new Event('input', { bubbles: true }));
             branchInput.dispatchEvent(new Event('change', { bubbles: true }));
+            console.log('建行API：已触发input和change事件');
             
             // 等待搜索结果加载，带重试
             let clicked = false;
@@ -1041,26 +1043,47 @@ async function selectBranchByAPI(data, districtSelect) {
                     const branchNameMatch = firstResult.textContent.match(/^([^可]+)/);
                     const branchName = branchNameMatch ? branchNameMatch[1].trim() : '';
                     
-                    console.log('建行API：选择网点', branchName);
+                    console.log('建行API：找到搜索结果，准备选择网点:', branchName);
+                    console.log('建行API：链接href:', firstResult.href);
                     
-                    // 使用完整的鼠标事件模拟点击
-                    const mouseDown = new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window });
-                    const mouseUp = new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window });
-                    const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true, view: window });
+                    // 方案1：直接执行href中的JavaScript
+                    if (firstResult.href && firstResult.href.includes('$query_getClickValue')) {
+                        const match = firstResult.href.match(/\$query_getClickValue\("([^"]+)"\)/);
+                        if (match && typeof $query_getClickValue === 'function') {
+                            console.log('建行API：调用$query_getClickValue函数', match[1]);
+                            $query_getClickValue(match[1]);
+                            clicked = true;
+                        }
+                    }
                     
-                    firstResult.dispatchEvent(mouseDown);
-                    firstResult.dispatchEvent(mouseUp);
-                    firstResult.dispatchEvent(clickEvent);
-                    clicked = true;
-                    console.log('建行API：模拟点击完成');
+                    // 方案2：如果方案1失败，使用鼠标事件
+                    if (!clicked) {
+                        console.log('建行API：使用鼠标事件点击');
+                        const mouseDown = new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window });
+                        const mouseUp = new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window });
+                        const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true, view: window });
+                        
+                        firstResult.dispatchEvent(mouseDown);
+                        firstResult.dispatchEvent(mouseUp);
+                        firstResult.dispatchEvent(clickEvent);
+                        clicked = true;
+                    }
+                    
+                    console.log('建行API：点击完成，等待响应');
                     
                     // 等待并关闭可能出现的弹窗
-                    await sleep(500);
+                    await sleep(800);
                     const confirmBtn = document.querySelector('.que2, .layui-layer-btn0');
                     if (confirmBtn) {
                         confirmBtn.click();
                         console.log('建行API：关闭弹窗');
                     }
+                    
+                    // 验证是否成功
+                    await sleep(300);
+                    const addressDiv = document.querySelector('#wddz, .wddz');
+                    console.log('建行API：网点地址元素:', addressDiv ? addressDiv.textContent : '未找到');
+                    
                     break;
                 }
             }
