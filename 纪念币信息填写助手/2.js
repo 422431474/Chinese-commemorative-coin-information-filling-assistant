@@ -1015,11 +1015,17 @@ async function selectBranchByAPI(data, districtSelect) {
         // 优先选择有库存的网点
         branches.sort((a, b) => b.stock - a.stock);
         
-        const selectedBranch = branches.find(b => b.stock > 0);
+        // 优先选择有库存的网点，如果没有则选择第一个
+        let selectedBranch = branches.find(b => b.stock > 0);
+        if (!selectedBranch && branches.length > 0) {
+            selectedBranch = branches[0];
+            console.log('建行API：当前区县无库存网点，选择第一个网点');
+            updateCCBStatus('⚠ 无库存，选择第一个网点');
+        }
+        
         if (!selectedBranch) {
-            console.log('建行API：当前区县无库存网点，跳过选择');
-            updateCCBStatus('⚠ 当前区县无库存');
-            return { success: false, noStock: true };
+            console.log('建行API：当前区县无网点');
+            return { success: false };
         }
         
         console.log('建行API：选择网点', selectedBranch.name, '库存:', selectedBranch.stock);
