@@ -940,18 +940,29 @@ async function findBestBranchAcrossDistricts(data, provinceSelect, citySelect, d
     return { success: false };
 }
 
-// 原生方式选择下拉选项（兼容建行页面）
+// 原生方式选择下拉选项（兼容建行页面的自定义下拉框）
 function selectOptionNative(select, text) {
     for (let i = 0; i < select.options.length; i++) {
         if (select.options[i].text.includes(text)) {
             select.value = select.options[i].value;
             select.selectedIndex = i;
+            
+            // 更新建行自定义下拉框的显示文本（select前面的div）
+            const displayDiv = select.previousElementSibling;
+            if (displayDiv && displayDiv.tagName === 'DIV') {
+                displayDiv.textContent = select.options[i].text;
+            }
+            
+            // 触发change事件
             const evt = document.createEvent('HTMLEvents');
             evt.initEvent('change', true, true);
             select.dispatchEvent(evt);
+            
+            console.log('建行：下拉框选择成功', text, '值:', select.value);
             return true;
         }
     }
+    console.log('建行：下拉框选择失败', text, '可用选项:', Array.from(select.options).map(o => o.text).join(','));
     return false;
 }
 
