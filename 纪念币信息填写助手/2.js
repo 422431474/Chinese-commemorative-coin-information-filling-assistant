@@ -1058,18 +1058,20 @@ async function selectBranchByAPI(data, districtSelect) {
                     console.log('建行API：找到搜索结果，准备选择网点:', branchName);
                     console.log('建行API：链接href:', firstResult.href);
                     
-                    // 方案1：直接执行href中的JavaScript
-                    if (firstResult.href && firstResult.href.includes('$query_getClickValue')) {
-                        const match = firstResult.href.match(/\$query_getClickValue\("([^"]+)"\)/);
-                        if (match && typeof $query_getClickValue === 'function') {
-                            console.log('建行API：调用$query_getClickValue函数', match[1]);
-                            $query_getClickValue(match[1]);
-                            clicked = true;
-                        }
-                    }
-                    
-                    // 方案2：如果方案1失败，使用鼠标事件
-                    if (!clicked) {
+                    // 从href中提取网点名称，通过注入脚本调用页面函数
+                    const hrefMatch = firstResult.href.match(/\$query_getClickValue\("([^"]+)"\)/);
+                    if (hrefMatch) {
+                        const targetBranchName = hrefMatch[1];
+                        console.log('建行API：通过注入脚本调用$query_getClickValue', targetBranchName);
+                        
+                        // 创建并执行脚本来调用页面函数（绕过CSP限制）
+                        const script = document.createElement('script');
+                        script.textContent = `$query_getClickValue("${targetBranchName}");`;
+                        document.head.appendChild(script);
+                        script.remove();
+                        clicked = true;
+                    } else {
+                        // 备用方案：使用鼠标事件
                         console.log('建行API：使用鼠标事件点击');
                         const mouseDown = new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window });
                         const mouseUp = new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window });
