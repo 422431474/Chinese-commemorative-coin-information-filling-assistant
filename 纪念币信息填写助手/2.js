@@ -1023,9 +1023,16 @@ async function selectBranchByAPI(data, districtSelect) {
             
             // 等待搜索结果加载，带重试
             let clicked = false;
-            for (let retry = 0; retry < 5; retry++) {
-                await sleep(800);
-                const results = document.querySelectorAll('li a[href*="getClickValue"]');
+            for (let retry = 0; retry < 8; retry++) {
+                await sleep(600);
+                // 尝试多种选择器
+                let results = document.querySelectorAll('li a[href*="getClickValue"]');
+                if (results.length === 0) {
+                    results = document.querySelectorAll('.query_list li a');
+                }
+                if (results.length === 0) {
+                    results = document.querySelectorAll('#query_list li a');
+                }
                 console.log('建行API：搜索结果数量', results.length, '重试', retry);
                 
                 if (results.length > 0) {
