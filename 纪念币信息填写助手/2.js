@@ -1029,24 +1029,11 @@ async function selectBranchByAPI(data, districtSelect) {
                 console.log('建行API：搜索结果数量', results.length, '重试', retry);
                 
                 if (results.length > 0) {
-                    // 优先点击包含关键字的结果（API返回的名称可能不完整）
-                    for (const result of results) {
-                        const resultText = result.textContent || '';
-                        // 检查结果是否包含网点名称，或网点名称是否包含结果
-                        if (resultText.includes(selectedBranch.name) || selectedBranch.name.includes(resultText.split('可预约')[0].trim())) {
-                            result.click();
-                            clicked = true;
-                            console.log('建行API：点击搜索结果', resultText);
-                            break;
-                        }
-                    }
-                    
-                    // 如果没找到匹配，直接点击第一个结果
-                    if (!clicked) {
-                        results[0].click();
-                        clicked = true;
-                        console.log('建行API：点击第一个搜索结果', results[0].textContent);
-                    }
+                    // 直接点击第一个搜索结果（搜索关键字已经是网点名称）
+                    const firstResult = results[0];
+                    console.log('建行API：点击搜索结果', firstResult.textContent);
+                    firstResult.click();
+                    clicked = true;
                     break;
                 }
             }
