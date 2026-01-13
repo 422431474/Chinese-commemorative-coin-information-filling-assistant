@@ -9,7 +9,7 @@
     "48": "logo.png",
     "128": "logo.png"
   },
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": [
     "https://apply.95559.com.cn/*",
     "https://cmcoins.boc.cn/*",
@@ -27,6 +27,9 @@
   "action": {
     "default_popup": "1.html",
     "default_title": "纪念币信息填写助手 - DYexb开发 - 禁止商业使用"
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {

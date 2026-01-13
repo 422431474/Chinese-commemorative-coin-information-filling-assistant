@@ -57,6 +57,53 @@ function isDomainAllowed() {
 }
 // 严禁付费获取
 
+// 向页面注入脚本并调用全局函数（绕过content script隔离和CSP限制）
+// 通过 background service worker 使用 chrome.scripting.executeScript 实现
+async function executeInMainWorld(funcName, ...args) {
+    return new Promise((resolve) => {
+        chrome.runtime.sendMessage(
+            { action: 'executeInMainWorld', funcName, args },
+            (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error('executeInMainWorld 错误:', chrome.runtime.lastError.message);
+                    resolve({ success: false, error: chrome.runtime.lastError.message });
+                } else {
+                    resolve(response || { success: false, error: '无响应' });
+                }
+            }
+        );
+    });
+}
+
+// 旧的注入方法作为备用（某些情况下可能仍然有效）
+function injectAndCallFunction(funcName, ...args) {
+    try {
+        const script = document.createElement('script');
+        const argsStr = args.map(arg => JSON.stringify(arg)).join(',');
+        script.textContent = `
+            (function() {
+                try {
+                    if (typeof ${funcName} === 'function') {
+                        ${funcName}(${argsStr});
+                    } else if (typeof window['${funcName}'] === 'function') {
+                        window['${funcName}'](${argsStr});
+                    } else {
+                        console.error('函数 ${funcName} 不存在');
+                    }
+                } catch(e) {
+                    console.error('调用 ${funcName} 失败:', e);
+                }
+            })();
+        `;
+        document.documentElement.appendChild(script);
+        script.remove();
+        return true;
+    } catch (e) {
+        console.error('注入脚本失败:', e);
+        return false;
+    }
+}
+
 function validateData(data) {
     const requiredFields = ['userName', 'idCard', 'phone'];
     for (let field of requiredFields) {
@@ -1063,16 +1110,39 @@ async function selectBranchByAPI(data, districtSelect) {
                     if (hrefMatch) {
                         const targetBranchName = hrefMatch[1];
                         console.log('建行API：准备选择网点', targetBranchName);
-                        
-                        // 使用location.href执行JavaScript URL（这是唯一能绕过CSP的方法）
-                        const currentHref = window.location.href;
-                        window.location.href = `javascript:$query_getClickValue("${targetBranchName}");void(0);`;
-                        clicked = true;
+
+                        // 通过 background service worker 在页面主世界执行（绕过CSP）
+                        const result = await executeInMainWorld('$query_getClickValue', targetBranchName);
+                        if (result && result.success) {
+                            clicked = true;
+                            console.log('建行API：通过主世界脚本选择成功');
+                        } else {
+                            console.log('建行API：主世界执行失败', result?.error);
+                            // 备用方案：尝试旧的注入方法
+                            injectAndCallFunction('$query_getClickValue', targetBranchName);
+                            clicked = true;
+                        }
                     } else {
-                        // 备用方案：直接点击链接
-                        console.log('建行API：直接点击链接');
-                        firstResult.click();
-                        clicked = true;
+                        // 尝试从onclick属性提取
+                        const onclickAttr = firstResult.getAttribute('onclick') || '';
+                        const onclickMatch = onclickAttr.match(/\$query_getClickValue\("([^"]+)"\)/);
+                        if (onclickMatch) {
+                            const targetBranchName = onclickMatch[1];
+                            await executeInMainWorld('$query_getClickValue', targetBranchName);
+                            clicked = true;
+                            console.log('建行API：通过onclick属性选择成功');
+                        } else {
+                            // 最后备用：模拟鼠标事件（不触发href）
+                            console.log('建行API：尝试模拟鼠标事件');
+                            const mouseEvent = new MouseEvent('click', {
+                                bubbles: true,
+                                cancelable: true,
+                                view: window
+                            });
+                            // 阻止默认行为后手动触发
+                            firstResult.dispatchEvent(mouseEvent);
+                            clicked = true;
+                        }
                     }
                     
                     console.log('建行API：点击完成，等待响应');
