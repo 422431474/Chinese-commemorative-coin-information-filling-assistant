@@ -32,6 +32,14 @@ const BANK_REGION_SELECTORS = {
         district: ['.el-input__inner[placeholder*="区" i]', '[placeholder*="区" i]'],
         fillMethod: fillICBCRegion
     },
+    // 建设银行专用配置
+    'jinianbi.ccb.com': {
+        type: 'ccb_custom',
+        province: ['li:has(span:contains("选择网点")) select:first'],
+        city: ['li:has(span:contains("选择网点")) select:nth(1)'],
+        district: ['li:has(span:contains("选择网点")) select:nth(2)'],
+        fillMethod: fillCCBRegion
+    },
     // 禁止任何形式的商业使用
     'default': {
         type: 'standard_select',
@@ -199,6 +207,728 @@ function fillICBCRegion(data, selectors) {
 }
 // DYexb开发
 
+// 建设银行专用填写函数
+function fillCCBRegion(data, selectors) {
+    let filledCount = 0;
+    
+    const fillCCBSequence = async () => {
+        try {
+            // 获取所有select元素（在"选择网点"行中）
+            const selectLi = document.querySelector('li');
+            let allSelects = [];
+            
+            // 查找包含"选择网点"的li元素中的所有select
+            const allLis = document.querySelectorAll('li');
+            for (const li of allLis) {
+                const text = li.textContent || '';
+                if (text.includes('选择网点')) {
+                    allSelects = li.querySelectorAll('select');
+                    break;
+                }
+            }
+            
+            if (allSelects.length < 3) {
+                console.log('建行：未找到足够的地区选择框');
+                return;
+            }
+            
+            const provinceSelect = allSelects[0];
+            const citySelect = allSelects[1];
+            const districtSelect = allSelects[2];
+            
+            // 选择省份
+            if (data.province && provinceSelect) {
+                if (selectOption(provinceSelect, data.province)) {
+                    filledCount++;
+                    console.log('建行：已选择省份', data.province);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+            
+            // 选择城市
+            if (data.city && citySelect) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                if (selectOption(citySelect, data.city)) {
+                    filledCount++;
+                    console.log('建行：已选择城市', data.city);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+            
+            // 选择区县
+            if (data.district && districtSelect) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                if (selectOption(districtSelect, data.district)) {
+                    filledCount++;
+                    console.log('建行：已选择区县', data.district);
+                }
+            }
+            
+            // 填写网点搜索
+            if (data.appointmentBranch) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                const branchInput = document.querySelector('input[placeholder*="网点"]');
+                if (branchInput) {
+                    branchInput.value = data.appointmentBranch;
+                    triggerEvent(branchInput, 'input');
+                    triggerEvent(branchInput, 'change');
+                    filledCount++;
+                    console.log('建行：已填写网点', data.appointmentBranch);
+                }
+            }
+            
+        } catch (error) {
+            console.error('建行地区填充错误:', error);
+        }
+    };
+    
+    setTimeout(() => fillCCBSequence(), 300);
+    return filledCount;
+}
+
+// 建设银行专用：填写表单（包括验证码识别）
+async function fillCCBForm(data) {
+    let filledCount = 0;
+    const currentHostname = window.location.hostname;
+    
+    if (!currentHostname.includes('jinianbi.ccb.com')) {
+        return { success: false, error: '非建行预约页面' };
+    }
+    
+    console.log('建行：开始填写表单', data);
+    
+    // 1. 填写客户姓名
+    const nameInput = findInputByLabel('客户姓名');
+    if (nameInput && data.userName) {
+        nameInput.value = data.userName;
+        triggerEvent(nameInput, 'input');
+        triggerEvent(nameInput, 'change');
+        filledCount++;
+        console.log('建行：已填写姓名');
+    }
+    
+    // 2. 填写证件号码
+    const idInput = findInputByLabel('证件号码');
+    if (idInput && data.idCard) {
+        idInput.value = data.idCard;
+        triggerEvent(idInput, 'input');
+        triggerEvent(idInput, 'change');
+        filledCount++;
+        console.log('建行：已填写证件号码');
+    }
+    
+    // 3. 填写手机号码
+    const phoneInput = findInputByLabel('手机号码');
+    if (phoneInput && data.phone) {
+        phoneInput.value = data.phone;
+        triggerEvent(phoneInput, 'input');
+        triggerEvent(phoneInput, 'change');
+        filledCount++;
+        console.log('建行：已填写手机号码');
+    }
+    
+    // 4. 识别并填写验证码
+    const captchaResult = await solveCCBCaptcha();
+    if (captchaResult.success) {
+        filledCount++;
+        console.log('建行：已填写验证码', captchaResult.code);
+    }
+    
+    return { success: true, filledFields: filledCount };
+}
+
+// 通过label文字查找对应的input
+function findInputByLabel(labelText) {
+    const allLis = document.querySelectorAll('li');
+    for (const li of allLis) {
+        const text = li.textContent || '';
+        if (text.includes(labelText)) {
+            const input = li.querySelector('input[type="text"], input:not([type])');
+            if (input) return input;
+        }
+    }
+    return null;
+}
+
+// 建设银行验证码识别
+async function solveCCBCaptcha() {
+    try {
+        // 找到验证码图片 (id="fujiama" 或 class="yzm_img")
+        const captchaImg = document.querySelector('#fujiama, img.yzm_img');
+        if (!captchaImg) {
+            console.log('建行：未找到验证码图片');
+            return { success: false, error: '未找到验证码图片' };
+        }
+        
+        // 找到验证码输入框
+        const captchaInput = findInputByLabel('附加码');
+        if (!captchaInput) {
+            console.log('建行：未找到验证码输入框');
+            return { success: false, error: '未找到验证码输入框' };
+        }
+        
+        // 将验证码图片转为base64
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = captchaImg.naturalWidth || captchaImg.width;
+        canvas.height = captchaImg.naturalHeight || captchaImg.height;
+        ctx.drawImage(captchaImg, 0, 0);
+        const base64 = canvas.toDataURL('image/png');
+        
+        // 调用本地OCR服务
+        try {
+            const response = await fetch('http://127.0.0.1:9898/ocr', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64.split(',')[1] })
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.code && result.code.length >= 4) {
+                    captchaInput.value = result.code;
+                    triggerEvent(captchaInput, 'input');
+                    triggerEvent(captchaInput, 'change');
+                    console.log('建行：验证码识别成功', result.code);
+                    return { success: true, code: result.code };
+                }
+            }
+        } catch (fetchError) {
+            console.log('建行：OCR服务调用失败', fetchError.message);
+        }
+        
+        // OCR失败，刷新验证码
+        captchaImg.click();
+        return { success: false, error: '验证码识别失败，请确保OCR服务已启动' };
+        
+    } catch (error) {
+        console.error('建行验证码识别错误:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// 验证码识别（调用本地ddddocr服务）
+async function recognizeCaptcha(base64Image) {
+    try {
+        // 尝试调用本地ddddocr HTTP服务
+        const response = await fetch('http://127.0.0.1:9898/ocr', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: base64Image.split(',')[1] })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            if (result.code) {
+                console.log('验证码识别成功:', result.code);
+                return result.code;
+            }
+        }
+    } catch (error) {
+        console.log('本地OCR服务不可用，尝试备用方案');
+    }
+    
+    // 备用方案：简单的图像分析（仅作为fallback）
+    return null;
+}
+
+// 建设银行配置：选择模式
+const CCB_CONFIG = {
+    MODE: 'api', // 'api' = 接口模式(优先选择有库存), 'dropdown' = 下拉模式(按顺序选择)
+    DEFAULT_PROVINCE: '北京市',
+    DEFAULT_CITY: '市辖区',
+    DEFAULT_DISTRICT: '朝阳区',
+    SMS_CHECK_INTERVAL: 1000, // 检测短信验证码的间隔(毫秒)
+    SMS_CHECK_TIMEOUT: 120000 // 等待短信验证码的超时时间(毫秒)
+};
+
+// 建设银行异步填写表单（分步骤执行）
+async function fillCCBFormAsync(data) {
+    let filledCount = 0;
+    
+    console.log('建行：开始填写表单（第一阶段：基本信息+验证码）');
+    console.log('建行：当前模式 =', CCB_CONFIG.MODE);
+    
+    // 第一阶段：填写基本信息和图片验证码
+    
+    // 1. 填写客户姓名
+    const nameInput = findInputByLabel('客户姓名');
+    if (nameInput && data.userName) {
+        nameInput.value = data.userName;
+        triggerEvent(nameInput, 'input');
+        triggerEvent(nameInput, 'change');
+        filledCount++;
+        console.log('建行：已填写姓名');
+    }
+    
+    // 2. 填写证件号码
+    const idInput = findInputByLabel('证件号码');
+    if (idInput && data.idCard) {
+        idInput.value = data.idCard;
+        triggerEvent(idInput, 'input');
+        triggerEvent(idInput, 'change');
+        filledCount++;
+        console.log('建行：已填写证件号码');
+    }
+    
+    // 3. 填写手机号码
+    const phoneInput = findInputByLabel('手机号码');
+    if (phoneInput && data.phone) {
+        phoneInput.value = data.phone;
+        triggerEvent(phoneInput, 'input');
+        triggerEvent(phoneInput, 'change');
+        filledCount++;
+        console.log('建行：已填写手机号码');
+    }
+    
+    // 4. 识别并填写图片验证码
+    const captchaResult = await solveCCBCaptcha();
+    if (captchaResult.success) {
+        filledCount++;
+        console.log('建行：已填写验证码', captchaResult.code);
+    } else {
+        console.log('建行：验证码识别失败，请手动输入');
+    }
+    
+    // 5. 添加辅助按钮到页面
+    addCCBHelperButtons(data);
+    
+    // 6. 等待短信验证码填写完成
+    console.log('建行：等待用户获取并输入短信验证码...');
+    const smsResult = await waitForSMSCode();
+    
+    if (!smsResult.success) {
+        return { 
+            success: false, 
+            filledFields: filledCount,
+            message: '等待短信验证码超时',
+            captchaFilled: captchaResult.success
+        };
+    }
+    
+    console.log('建行：检测到短信验证码，继续第二阶段');
+    
+    // 第二阶段：选择网点和完成表单
+    
+    // 7. 选择省市区并选择有库存的网点
+    const regionResult = await selectCCBRegionAndBranch(data);
+    filledCount += regionResult.filledCount;
+    
+    // 8. 填写预约日期
+    const dateResult = fillCCBDate();
+    if (dateResult.success) {
+        filledCount++;
+        console.log('建行：已填写预约日期', dateResult.date);
+    }
+    
+    // 9. 填写预约数量
+    if (data.appointmentQuantity) {
+        const qtyInput = findInputByLabel('兑换数量');
+        if (qtyInput) {
+            qtyInput.value = data.appointmentQuantity;
+            triggerEvent(qtyInput, 'input');
+            triggerEvent(qtyInput, 'change');
+            filledCount++;
+            console.log('建行：已填写兑换数量');
+        }
+    }
+    
+    // 10. 勾选协议
+    const checkbox = document.querySelector('input[type="checkbox"]');
+    if (checkbox && !checkbox.checked) {
+        checkbox.click();
+        filledCount++;
+        console.log('建行：已勾选协议');
+    }
+    
+    // 移除辅助按钮
+    removeCCBHelperButtons();
+    
+    return { 
+        success: true, 
+        filledFields: filledCount,
+        message: `成功填充 ${filledCount} 个字段`,
+        captchaFilled: captchaResult.success,
+        branchSelected: regionResult.branchName
+    };
+}
+
+// 等待短信验证码填写完成
+async function waitForSMSCode() {
+    const smsInput = findInputByLabel('短信验证码');
+    if (!smsInput) {
+        return { success: false, error: '未找到短信验证码输入框' };
+    }
+    
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < CCB_CONFIG.SMS_CHECK_TIMEOUT) {
+        const value = smsInput.value.trim();
+        if (value.length >= 4) {
+            console.log('建行：检测到短信验证码已填写');
+            return { success: true, code: value };
+        }
+        await sleep(CCB_CONFIG.SMS_CHECK_INTERVAL);
+    }
+    
+    return { success: false, error: '等待超时' };
+}
+
+// 添加辅助按钮到页面
+function addCCBHelperButtons(data) {
+    if (document.getElementById('ccb-helper-container')) return;
+    
+    const container = document.createElement('div');
+    container.id = 'ccb-helper-container';
+    container.style.cssText = 'position:fixed;top:10px;right:10px;z-index:99999;background:#fff;padding:15px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.2);font-family:Arial,sans-serif;min-width:180px;';
+    
+    container.innerHTML = `
+        <div style="font-size:14px;font-weight:bold;margin-bottom:10px;color:#0066cc;">🪙 纪念币助手</div>
+        <button id="ccb-refresh-captcha" style="display:block;width:100%;padding:10px 15px;margin-bottom:8px;background:#0066cc;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">🔄 刷新验证码</button>
+        <div id="ccb-status" style="font-size:12px;color:#666;margin-top:5px;padding:5px;background:#f5f5f5;border-radius:4px;"></div>
+        <div style="font-size:12px;color:#666;margin-top:8px;line-height:1.5;">
+            <p style="margin:3px 0;">1. 点击"获取验证码"</p>
+            <p style="margin:3px 0;">2. 输入短信验证码</p>
+            <p style="margin:3px 0;color:#0066cc;">系统将自动继续</p>
+        </div>
+    `;
+    
+    document.body.appendChild(container);
+    updateCCBStatus('等待操作...');
+    
+    // 绑定刷新验证码按钮事件
+    document.getElementById('ccb-refresh-captcha').addEventListener('click', async () => {
+        const btn = document.getElementById('ccb-refresh-captcha');
+        btn.disabled = true;
+        btn.textContent = '识别中...';
+        updateCCBStatus('正在刷新验证码...');
+        
+        const captchaImg = document.querySelector('#fujiama, img.yzm_img');
+        if (captchaImg) {
+            captchaImg.click();
+            await sleep(800);
+            const result = await solveCCBCaptcha();
+            if (result.success) {
+                updateCCBStatus('✓ 验证码已填入: ' + result.code);
+            } else {
+                updateCCBStatus('✗ 识别失败，请手动输入');
+            }
+        }
+        
+        btn.disabled = false;
+        btn.textContent = '🔄 刷新验证码';
+    });
+}
+
+// 更新状态显示
+function updateCCBStatus(message) {
+    const statusEl = document.getElementById('ccb-status');
+    if (statusEl) {
+        statusEl.textContent = message;
+    }
+}
+
+// 移除辅助按钮
+function removeCCBHelperButtons() {
+    const container = document.getElementById('ccb-helper-container');
+    if (container) container.remove();
+}
+
+// 填写预约日期（选择最早可用日期）
+function fillCCBDate() {
+    try {
+        const dateInput = findInputByLabel('兑换日期');
+        if (!dateInput) return { success: false };
+        
+        // 获取兑换起止日
+        const startDateEl = document.querySelector('li:has(*:contains("兑换日期")) [class*="date"], li:has(*:contains("兑换起止日")) ~ *');
+        let startDate = '20260120'; // 默认值
+        
+        // 尝试从页面获取起始日期
+        const allElements = document.querySelectorAll('*');
+        for (const el of allElements) {
+            const text = el.textContent || '';
+            const match = text.match(/兑换起止日[：:]\s*(\d{8})/);
+            if (match) {
+                startDate = match[1];
+                break;
+            }
+        }
+        
+        // 查找页面上显示的起始日期
+        const dateTexts = document.body.innerText.match(/20\d{6}/g);
+        if (dateTexts && dateTexts.length > 0) {
+            for (const dt of dateTexts) {
+                if (dt >= '20260120' && dt <= '20260126') {
+                    startDate = dt;
+                    break;
+                }
+            }
+        }
+        
+        dateInput.value = startDate;
+        triggerEvent(dateInput, 'input');
+        triggerEvent(dateInput, 'change');
+        
+        return { success: true, date: startDate };
+    } catch (error) {
+        console.error('建行：填写日期失败', error);
+        return { success: false };
+    }
+}
+
+// 选择省市区并选择网点
+async function selectCCBRegionAndBranch(data) {
+    let filledCount = 0;
+    let branchName = '';
+    
+    try {
+        const allLis = document.querySelectorAll('li');
+        let selectLi = null;
+        for (const li of allLis) {
+            if (li.textContent.includes('选择网点')) {
+                selectLi = li;
+                break;
+            }
+        }
+        
+        if (!selectLi) {
+            console.log('建行：未找到选择网点区域');
+            return { filledCount: 0, branchName: '' };
+        }
+        
+        const allSelects = selectLi.querySelectorAll('select');
+        if (allSelects.length < 3) {
+            console.log('建行：未找到足够的下拉框');
+            return { filledCount: 0, branchName: '' };
+        }
+        
+        const provinceSelect = allSelects[0];
+        const citySelect = allSelects[1];
+        const districtSelect = allSelects[2];
+        
+        // 选择省份（使用原生方式触发change）
+        const province = data.province || CCB_CONFIG.DEFAULT_PROVINCE;
+        if (selectOptionNative(provinceSelect, province)) {
+            filledCount++;
+            console.log('建行：已选择省份', province);
+        }
+        
+        await sleep(1500);
+        
+        // 选择城市
+        const city = data.city || CCB_CONFIG.DEFAULT_CITY;
+        if (citySelect.options.length > 1) {
+            if (selectOptionNative(citySelect, city) || selectOptionByIndex(citySelect, 1)) {
+                filledCount++;
+                console.log('建行：已选择城市');
+            }
+        }
+        
+        await sleep(1500);
+        
+        // 选择区县
+        const district = data.district || CCB_CONFIG.DEFAULT_DISTRICT;
+        if (districtSelect.options.length > 1) {
+            if (selectOptionNative(districtSelect, district) || selectOptionByIndex(districtSelect, 1)) {
+                filledCount++;
+                console.log('建行：已选择区县');
+            }
+        }
+        
+        await sleep(1500);
+        
+        // 根据模式选择网点
+        if (CCB_CONFIG.MODE === 'api') {
+            const branchResult = await selectBranchByAPI(data, districtSelect);
+            if (branchResult.success) {
+                branchName = branchResult.branchName;
+                filledCount++;
+            }
+        } else {
+            const branchResult = await selectBranchByDropdown(data);
+            if (branchResult.success) {
+                branchName = branchResult.branchName;
+                filledCount++;
+            }
+        }
+        
+    } catch (error) {
+        console.error('建行：选择地区失败', error);
+    }
+    
+    return { filledCount, branchName };
+}
+
+// 原生方式选择下拉选项（兼容建行页面）
+function selectOptionNative(select, text) {
+    for (let i = 0; i < select.options.length; i++) {
+        if (select.options[i].text.includes(text)) {
+            select.value = select.options[i].value;
+            select.selectedIndex = i;
+            const evt = document.createEvent('HTMLEvents');
+            evt.initEvent('change', true, true);
+            select.dispatchEvent(evt);
+            return true;
+        }
+    }
+    return false;
+}
+
+// 接口模式：通过API获取有库存的网点
+async function selectBranchByAPI(data, districtSelect) {
+    try {
+        // 获取区县代码
+        const districtCode = districtSelect.value;
+        const productId = getProductId();
+        
+        // 调用网点库存接口
+        const url = `https://jinianbi.ccb.com/tran/WCCMainPlatV5?CCB_IBSVersion=V5&SERVLET_NAME=WCCMainPlatV5&isAjaxRequest=true&TXCODE=NYB004&CntyAndDstc_Cd=${districtCode}&PRODUCT_ID=${productId}&JNB_DATE_TYPE=0&CRDT_NO=${data.idCard}`;
+        
+        const response = await fetch(url, { method: 'POST', credentials: 'include' });
+        const text = await response.text();
+        
+        // 解析返回的JavaScript数组
+        const banksMatch = text.match(/var banks=\[([\s\S]*?)\];/);
+        if (!banksMatch) {
+            console.log('建行API：未找到网点数据');
+            return { success: false };
+        }
+        
+        // 解析网点数据
+        const banksStr = banksMatch[1];
+        const branches = [];
+        const branchRegex = /\{WDMC:'([^']+)',[\s\S]*?JNBZS:'(\d+)'/g;
+        let match;
+        while ((match = branchRegex.exec(banksStr)) !== null) {
+            branches.push({ name: match[1], stock: parseInt(match[2]) });
+        }
+        
+        console.log('建行API：获取到', branches.length, '个网点');
+        
+        // 优先选择有库存的网点
+        branches.sort((a, b) => b.stock - a.stock);
+        
+        const selectedBranch = branches.find(b => b.stock > 0) || branches[0];
+        if (!selectedBranch) {
+            console.log('建行API：无可用网点');
+            return { success: false };
+        }
+        
+        console.log('建行API：选择网点', selectedBranch.name, '库存:', selectedBranch.stock);
+        
+        // 填写网点搜索框
+        const branchInput = document.querySelector('input[placeholder*="网点"]');
+        if (branchInput) {
+            branchInput.value = selectedBranch.name;
+            triggerEvent(branchInput, 'input');
+            triggerEvent(branchInput, 'change');
+            
+            await sleep(500);
+            
+            // 点击搜索结果中的网点
+            const resultLink = document.querySelector(`a[href*="${selectedBranch.name}"], a:contains("${selectedBranch.name}")`);
+            if (resultLink) {
+                resultLink.click();
+            } else {
+                // 尝试点击第一个搜索结果
+                const firstResult = document.querySelector('li a[href*="getClickValue"]');
+                if (firstResult) firstResult.click();
+            }
+        }
+        
+        return { success: true, branchName: selectedBranch.name, stock: selectedBranch.stock };
+        
+    } catch (error) {
+        console.error('建行API：获取网点失败', error);
+        return { success: false };
+    }
+}
+
+// 下拉模式：从搜索结果中选择有库存的网点
+async function selectBranchByDropdown(data) {
+    try {
+        // 输入网点关键字触发搜索
+        const branchInput = document.querySelector('input[placeholder*="网点"]');
+        if (!branchInput) return { success: false };
+        
+        const keyword = data.appointmentBranch || '支行';
+        branchInput.value = keyword;
+        triggerEvent(branchInput, 'input');
+        
+        await sleep(1500);
+        
+        // 查找搜索结果中有库存的网点
+        const resultItems = document.querySelectorAll('li a[href*="getClickValue"]');
+        let selectedBranch = null;
+        
+        for (const item of resultItems) {
+            const text = item.textContent || '';
+            const stockMatch = text.match(/可预约数量[：:]?\s*(\d+)/);
+            if (stockMatch) {
+                const stock = parseInt(stockMatch[1]);
+                if (stock > 0) {
+                    selectedBranch = { element: item, name: text.split('可预约')[0].trim(), stock };
+                    break;
+                }
+            }
+        }
+        
+        // 如果没有有库存的，选择第一个
+        if (!selectedBranch && resultItems.length > 0) {
+            const firstItem = resultItems[0];
+            const text = firstItem.textContent || '';
+            selectedBranch = { element: firstItem, name: text.split('可预约')[0].trim(), stock: 0 };
+        }
+        
+        if (selectedBranch) {
+            selectedBranch.element.click();
+            console.log('建行下拉：选择网点', selectedBranch.name, '库存:', selectedBranch.stock);
+            return { success: true, branchName: selectedBranch.name, stock: selectedBranch.stock };
+        }
+        
+        return { success: false };
+        
+    } catch (error) {
+        console.error('建行下拉：选择网点失败', error);
+        return { success: false };
+    }
+}
+
+// 获取产品ID
+function getProductId() {
+    const url = window.location.href;
+    const match = url.match(/PRODUCT_ID=(\d+)/);
+    return match ? match[1] : '201945';
+}
+
+// 辅助函数：通过文本选择下拉选项
+function selectOptionByText(select, text) {
+    for (let i = 0; i < select.options.length; i++) {
+        if (select.options[i].text.includes(text)) {
+            select.selectedIndex = i;
+            triggerEvent(select, 'change');
+            return true;
+        }
+    }
+    return false;
+}
+
+// 辅助函数：通过索引选择下拉选项
+function selectOptionByIndex(select, index) {
+    if (select.options.length > index) {
+        select.selectedIndex = index;
+        triggerEvent(select, 'change');
+        return true;
+    }
+    return false;
+}
+
+// 辅助函数：延时
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function fillStandardSelectRegion(data, selectors) {
     let filledCount = 0;
     // 严禁商业使用
@@ -328,6 +1058,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         const data = request.data;
         const currentHostname = window.location.hostname;
+        
+        // 建设银行专用处理
+        if (currentHostname.includes('jinianbi.ccb.com')) {
+            fillCCBFormAsync(data).then(result => {
+                sendResponse(result);
+            });
+            return true; // 异步响应
+        }
         // DYexb版权所有
         
         const selectors = {

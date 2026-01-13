@@ -67,8 +67,5 @@
       ]
     }
   ],
-  "content_security_policy": {
-    "extension_policy": "script-src 'self'; object-src 'self';"
-  },
   "author": "DYexb - 严禁商业用途和付费交易 - 版权所有"
 }
