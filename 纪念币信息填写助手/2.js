@@ -1045,24 +1045,41 @@ async function selectBranchByAPI(data, districtSelect) {
         
         console.log('建行API：选择网点', selectedBranch.name, '库存:', selectedBranch.stock);
         
-        // 填写网点搜索框
+        // 填写网点搜索框并触发搜索
         const branchInput = document.querySelector('input[placeholder*="网点"]');
         if (branchInput) {
-            branchInput.value = selectedBranch.name;
-            triggerEvent(branchInput, 'input');
-            triggerEvent(branchInput, 'change');
+            // 清空输入框
+            branchInput.value = '';
+            branchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            await sleep(300);
+            
+            // 输入网点名称的关键字（取前几个字）
+            const keyword = selectedBranch.name.substring(0, 6);
+            branchInput.value = keyword;
+            branchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            branchInput.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            await sleep(1000);
+            
+            // 查找并点击匹配的搜索结果
+            const results = document.querySelectorAll('li a[href*="getClickValue"]');
+            let clicked = false;
+            for (const result of results) {
+                if (result.textContent.includes(selectedBranch.name)) {
+                    result.click();
+                    clicked = true;
+                    console.log('建行API：点击搜索结果', result.textContent);
+                    break;
+                }
+            }
+            
+            // 如果没找到精确匹配，点击第一个结果
+            if (!clicked && results.length > 0) {
+                results[0].click();
+                console.log('建行API：点击第一个搜索结果');
+            }
             
             await sleep(500);
-            
-            // 点击搜索结果中的网点
-            const resultLink = document.querySelector(`a[href*="${selectedBranch.name}"], a:contains("${selectedBranch.name}")`);
-            if (resultLink) {
-                resultLink.click();
-            } else {
-                // 尝试点击第一个搜索结果
-                const firstResult = document.querySelector('li a[href*="getClickValue"]');
-                if (firstResult) firstResult.click();
-            }
         }
         
         return { success: true, branchName: selectedBranch.name, stock: selectedBranch.stock };
