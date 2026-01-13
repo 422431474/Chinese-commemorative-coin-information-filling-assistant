@@ -683,7 +683,7 @@ function removeCCBHelperButtons() {
     if (container) container.remove();
 }
 
-// 填写预约日期（选择最早可用日期）
+// 填写预约日期（选择第一个可用日期）
 function fillCCBDate() {
     try {
         const dateInput = findInputByLabel('兑换日期');
@@ -694,37 +694,26 @@ function fillCCBDate() {
         
         let startDate = '';
         
-        // 方法1：查找页面上的兑换起止日文本
+        // 查找兑换起止日的起始日期（页面上显示的第一个8位数字）
         const allLis = document.querySelectorAll('li');
         for (const li of allLis) {
-            const text = li.textContent || '';
-            if (text.includes('兑换起止日') || text.includes('兑换日期')) {
-                const match = text.match(/(\d{8})/);
-                if (match) {
-                    startDate = match[1];
-                    console.log('建行：从页面获取到日期', startDate);
-                    break;
+            if (li.textContent.includes('兑换起止日')) {
+                // 查找li内的所有文本节点
+                const divs = li.querySelectorAll('div');
+                for (const div of divs) {
+                    const text = div.textContent.trim();
+                    if (/^\d{8}$/.test(text)) {
+                        startDate = text;
+                        break;
+                    }
                 }
+                if (startDate) break;
             }
         }
         
-        // 方法2：查找包含日期的div
-        if (!startDate) {
-            const divs = document.querySelectorAll('div');
-            for (const div of divs) {
-                const text = div.textContent || '';
-                if (text.match(/^\d{8}$/) && text.startsWith('202')) {
-                    startDate = text;
-                    console.log('建行：从div获取到日期', startDate);
-                    break;
-                }
-            }
-        }
-        
-        // 方法3：使用默认值
+        // 如果没找到，使用默认值
         if (!startDate) {
             startDate = '20260120';
-            console.log('建行：使用默认日期', startDate);
         }
         
         dateInput.value = startDate;
