@@ -780,17 +780,23 @@ async function selectCCBRegionAndBranch(data) {
         
         // 选择省份
         const province = data.province || CCB_CONFIG.DEFAULT_PROVINCE;
+        console.log('建行：尝试选择省份', province, '当前选项数:', provinceSelect.options.length);
         if (selectOptionNative(provinceSelect, province)) {
             filledCount++;
-            console.log('建行：已选择省份', province);
+            console.log('建行：已选择省份', province, '当前值:', provinceSelect.value);
+        } else {
+            console.log('建行：省份选择失败，尝试选择第一个');
+            selectOptionByIndex(provinceSelect, 1);
         }
         
         // 等待城市下拉框加载
-        await sleep(2000);
+        await sleep(2500);
+        console.log('建行：城市下拉框选项数:', citySelect.options.length);
         
         // 选择城市 - 等待选项加载
         const city = data.city || CCB_CONFIG.DEFAULT_CITY;
-        for (let retry = 0; retry < 5; retry++) {
+        for (let retry = 0; retry < 10; retry++) {
+            console.log('建行：城市选择重试', retry, '选项数:', citySelect.options.length);
             if (citySelect.options.length > 1) {
                 if (selectOptionNative(citySelect, city) || selectOptionByIndex(citySelect, 1)) {
                     filledCount++;
@@ -802,7 +808,8 @@ async function selectCCBRegionAndBranch(data) {
         }
         
         // 等待区县下拉框加载
-        await sleep(2000);
+        await sleep(2500);
+        console.log('建行：区县下拉框选项数:', districtSelect.options.length);
         
         // 如果开启自动查找库存，遍历所有区县
         if (CCB_CONFIG.AUTO_FIND_STOCK && CCB_CONFIG.MODE === 'api') {
