@@ -517,7 +517,7 @@ async function fillCCBFormAsync(data) {
     filledCount += regionResult.filledCount;
     
     // 8. 填写预约日期
-    const dateResult = fillCCBDate();
+    const dateResult = await fillCCBDate();
     if (dateResult.success) {
         filledCount++;
         console.log('建行：已填写预约日期', dateResult.date);
@@ -634,7 +634,7 @@ function addCCBHelperButtons(data) {
             const regionResult = await selectCCBRegionAndBranch(data);
             
             // 填写预约日期
-            const dateResult = fillCCBDate();
+            const dateResult = await fillCCBDate();
             if (dateResult.success) {
                 console.log('建行：已填写预约日期', dateResult.date);
             }
@@ -683,22 +683,43 @@ function removeCCBHelperButtons() {
     if (container) container.remove();
 }
 
-// 填写预约日期（选择第一个可用日期）
-function fillCCBDate() {
+// 填写预约日期（点击日历选择第一个可用日期）
+async function fillCCBDate() {
     try {
+        // 查找日期输入框旁边的日历图标
+        const calendarIcon = document.querySelector('img[src*="calendar"], img[onclick*="calendar"], .calendar-icon, [class*="date"] img');
         const dateInput = findInputByLabel('兑换日期');
+        
         if (!dateInput) {
             console.log('建行：未找到日期输入框');
             return { success: false };
         }
         
-        let startDate = '';
+        // 点击日期输入框或日历图标打开日历
+        if (calendarIcon) {
+            calendarIcon.click();
+        } else {
+            dateInput.click();
+        }
         
-        // 查找兑换起止日的起始日期（页面上显示的第一个8位数字）
+        await sleep(500);
+        
+        // 查找日历中可点击的日期（20-26号是可用的）
+        const calendarDays = document.querySelectorAll('td a, .calendar td, [class*="calendar"] td');
+        for (const day of calendarDays) {
+            const text = day.textContent.trim();
+            if (text === '20' || text === '21' || text === '22') {
+                day.click();
+                console.log('建行：已选择日期', text);
+                return { success: true, date: text };
+            }
+        }
+        
+        // 如果没找到日历，直接填写值
+        let startDate = '20260120';
         const allLis = document.querySelectorAll('li');
         for (const li of allLis) {
             if (li.textContent.includes('兑换起止日')) {
-                // 查找li内的所有文本节点
                 const divs = li.querySelectorAll('div');
                 for (const div of divs) {
                     const text = div.textContent.trim();
@@ -707,13 +728,8 @@ function fillCCBDate() {
                         break;
                     }
                 }
-                if (startDate) break;
+                if (startDate !== '20260120') break;
             }
-        }
-        
-        // 如果没找到，使用默认值
-        if (!startDate) {
-            startDate = '20260120';
         }
         
         dateInput.value = startDate;
