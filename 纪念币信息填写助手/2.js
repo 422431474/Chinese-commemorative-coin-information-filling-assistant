@@ -822,7 +822,13 @@ async function selectCCBRegionAndBranch(data) {
         }
         
         // 等待区县下拉框加载
-        await sleep(2500);
+        for (let retry = 0; retry < 10; retry++) {
+            console.log('建行：区县加载重试', retry, '选项数:', districtSelect.options.length);
+            if (districtSelect.options.length > 1) {
+                break;
+            }
+            await sleep(500);
+        }
         console.log('建行：区县下拉框选项数:', districtSelect.options.length);
         
         // 如果开启自动查找库存，遍历所有区县
