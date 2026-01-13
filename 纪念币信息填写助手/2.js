@@ -587,11 +587,12 @@ function addCCBHelperButtons(data) {
     container.innerHTML = `
         <div style="font-size:14px;font-weight:bold;margin-bottom:10px;color:#0066cc;">🪙 纪念币助手</div>
         <button id="ccb-refresh-captcha" style="display:block;width:100%;padding:10px 15px;margin-bottom:8px;background:#0066cc;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">🔄 刷新验证码</button>
+        <button id="ccb-continue" style="display:block;width:100%;padding:10px 15px;margin-bottom:8px;background:#28a745;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">▶ 继续选择网点</button>
         <div id="ccb-status" style="font-size:12px;color:#666;margin-top:5px;padding:5px;background:#f5f5f5;border-radius:4px;"></div>
-        <div style="font-size:12px;color:#666;margin-top:8px;line-height:1.5;">
+        <div style="font-size:11px;color:#888;margin-top:8px;line-height:1.5;">
             <p style="margin:3px 0;">1. 点击"获取验证码"</p>
             <p style="margin:3px 0;">2. 输入短信验证码</p>
-            <p style="margin:3px 0;color:#0066cc;">系统将自动继续</p>
+            <p style="margin:3px 0;">3. 点击"继续选择网点"</p>
         </div>
     `;
     
@@ -619,6 +620,52 @@ function addCCBHelperButtons(data) {
         
         btn.disabled = false;
         btn.textContent = '🔄 刷新验证码';
+    });
+    
+    // 绑定继续选择网点按钮事件
+    document.getElementById('ccb-continue').addEventListener('click', async () => {
+        const btn = document.getElementById('ccb-continue');
+        btn.disabled = true;
+        btn.textContent = '处理中...';
+        updateCCBStatus('正在选择网点...');
+        
+        try {
+            // 选择省市区并选择有库存的网点
+            const regionResult = await selectCCBRegionAndBranch(data);
+            
+            // 填写预约日期
+            const dateResult = fillCCBDate();
+            if (dateResult.success) {
+                console.log('建行：已填写预约日期', dateResult.date);
+            }
+            
+            // 填写预约数量
+            if (data.appointmentQuantity) {
+                const qtyInput = findInputByLabel('兑换数量');
+                if (qtyInput) {
+                    qtyInput.value = data.appointmentQuantity;
+                    triggerEvent(qtyInput, 'input');
+                }
+            }
+            
+            // 勾选协议
+            const checkbox = document.querySelector('input[type="checkbox"]');
+            if (checkbox && !checkbox.checked) {
+                checkbox.click();
+            }
+            
+            if (regionResult.branchName) {
+                updateCCBStatus('✓ 已选择: ' + regionResult.branchName);
+            } else {
+                updateCCBStatus('✓ 网点选择完成');
+            }
+        } catch (error) {
+            console.error('建行：选择网点失败', error);
+            updateCCBStatus('✗ 选择失败: ' + error.message);
+        }
+        
+        btn.disabled = false;
+        btn.textContent = '▶ 继续选择网点';
     });
 }
 
