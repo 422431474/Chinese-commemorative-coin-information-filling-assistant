@@ -1058,28 +1058,20 @@ async function selectBranchByAPI(data, districtSelect) {
                     console.log('建行API：找到搜索结果，准备选择网点:', branchName);
                     console.log('建行API：链接href:', firstResult.href);
                     
-                    // 从href中提取网点名称，通过注入脚本调用页面函数
+                    // 从href中提取网点名称
                     const hrefMatch = firstResult.href.match(/\$query_getClickValue\("([^"]+)"\)/);
                     if (hrefMatch) {
                         const targetBranchName = hrefMatch[1];
-                        console.log('建行API：通过注入脚本调用$query_getClickValue', targetBranchName);
+                        console.log('建行API：准备选择网点', targetBranchName);
                         
-                        // 创建并执行脚本来调用页面函数（绕过CSP限制）
-                        const script = document.createElement('script');
-                        script.textContent = `$query_getClickValue("${targetBranchName}");`;
-                        document.head.appendChild(script);
-                        script.remove();
+                        // 使用location.href执行JavaScript URL（这是唯一能绕过CSP的方法）
+                        const currentHref = window.location.href;
+                        window.location.href = `javascript:$query_getClickValue("${targetBranchName}");void(0);`;
                         clicked = true;
                     } else {
-                        // 备用方案：使用鼠标事件
-                        console.log('建行API：使用鼠标事件点击');
-                        const mouseDown = new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window });
-                        const mouseUp = new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window });
-                        const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true, view: window });
-                        
-                        firstResult.dispatchEvent(mouseDown);
-                        firstResult.dispatchEvent(mouseUp);
-                        firstResult.dispatchEvent(clickEvent);
+                        // 备用方案：直接点击链接
+                        console.log('建行API：直接点击链接');
+                        firstResult.click();
                         clicked = true;
                     }
                     
