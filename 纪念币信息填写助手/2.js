@@ -1034,6 +1034,14 @@ async function selectBranchByAPI(data, districtSelect) {
                     console.log('建行API：点击搜索结果', firstResult.textContent);
                     firstResult.click();
                     clicked = true;
+                    
+                    // 等待并关闭可能出现的"此网点暂时不可预约"弹窗
+                    await sleep(500);
+                    const confirmBtn = document.querySelector('.que2, .layui-layer-btn0');
+                    if (confirmBtn) {
+                        confirmBtn.click();
+                        console.log('建行API：关闭弹窗');
+                    }
                     break;
                 }
             }
