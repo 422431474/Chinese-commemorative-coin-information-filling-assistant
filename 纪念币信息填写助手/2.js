@@ -808,44 +808,17 @@ async function closeCCBCalendarPopup() {
     }
 }
 
-// 填写预约日期（点击日历选择第一个可用日期）
+// 填写预约日期（直接填值，不触发日历弹窗）
 async function fillCCBDate() {
     try {
-        // 查找日期输入框旁边的日历图标
-        const calendarIcon = document.querySelector('img[src*="calendar"], img[onclick*="calendar"], .calendar-icon, [class*="date"] img');
         const dateInput = findInputByLabel('兑换日期');
-        
+
         if (!dateInput) {
             console.log('建行：未找到日期输入框');
             return { success: false };
         }
-        
-        // 点击日期输入框或日历图标打开日历
-        if (calendarIcon) {
-            calendarIcon.click();
-        } else {
-            dateInput.click();
-        }
-        
-        await sleep(500);
-        
-        // 查找日历中可点击的日期（20-26号是可用的）
-        const calendarDays = document.querySelectorAll('td a, .calendar td, [class*="calendar"] td');
-        for (const day of calendarDays) {
-            const text = day.textContent.trim();
-            if (text === '20' || text === '21' || text === '22') {
-                day.click();
-                console.log('建行：已选择日期', text);
 
-                // 等待一下然后关闭日历弹窗
-                await sleep(300);
-                await closeCCBCalendarPopup();
-
-                return { success: true, date: text };
-            }
-        }
-        
-        // 如果没找到日历，直接填写值
+        // 从页面获取兑换起始日期
         let startDate = '20260120';
         const allLis = document.querySelectorAll('li');
         for (const li of allLis) {
@@ -861,11 +834,12 @@ async function fillCCBDate() {
                 if (startDate !== '20260120') break;
             }
         }
-        
+
+        // 直接设置值，不点击不触发弹窗
         dateInput.value = startDate;
         dateInput.dispatchEvent(new Event('input', { bubbles: true }));
         dateInput.dispatchEvent(new Event('change', { bubbles: true }));
-        
+
         console.log('建行：已填写日期', startDate);
         return { success: true, date: startDate };
     } catch (error) {
